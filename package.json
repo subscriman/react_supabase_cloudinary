@@ -1,0 +1,29 @@
+{
+  "name": "subscription-manager",
+  "version": "1.0.0",
+  "description": "구독 상품 관리 앱",
+  "main": "index.js",
+  "scripts": {
+    "setup": "npm run setup:mobile && npm run setup:web",
+    "setup:mobile": "cd mobile && npm install",
+    "setup:web": "cd web && npm install",
+    "dev:mobile": "cd mobile && npm start",
+    "dev:web": "cd web && npm run dev",
+    "build:web": "cd web && npm run build",
+    "cloudinary:setup": "echo 'Please follow docs/cloudinary-setup.md to configure Cloudinary'"
+  },
+  "keywords": [
+    "subscription",
+    "management",
+    "react-native",
+    "supabase"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.89.0",
+    "cloudinary": "^2.8.0",
+    "cloudinary-react": "^1.8.1",
+    "dotenv": "^17.2.3"
+  }
+}

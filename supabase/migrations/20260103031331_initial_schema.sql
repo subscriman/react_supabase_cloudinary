@@ -1,0 +1,108 @@
+-- 구독 관리 앱 데이터베이스 스키마
+
+-- 사용자 테이블
+CREATE TABLE users (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  provider VARCHAR(20) NOT NULL CHECK (provider IN ('google', 'kakao', 'naver')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 구독 상품 테이블
+CREATE TABLE subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  provider VARCHAR(100) NOT NULL,
+  start_date DATE,
+  payment_date DATE,
+  payment_amount DECIMAL(10,2),
+  payment_method VARCHAR(50),
+  expiry_date DATE,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 서브 상품 테이블
+CREATE TABLE sub_products (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  subscription_id UUID REFERENCES subscriptions(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('coupon', 'benefit', 'service')),
+  quantity INTEGER DEFAULT 1,
+  expiry_date DATE,
+  validity_period INTEGER, -- days
+  is_used BOOLEAN DEFAULT false,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 구독 프리셋 테이블
+CREATE TABLE subscription_presets (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  provider VARCHAR(100) NOT NULL,
+  description TEXT,
+  is_official BOOLEAN DEFAULT false,
+  created_by VARCHAR(100) DEFAULT 'admin',
+  likes INTEGER DEFAULT 0,
+  downloads INTEGER DEFAULT 0,
+  template JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 프리셋 좋아요 테이블
+CREATE TABLE preset_likes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  preset_id UUID REFERENCES subscription_presets(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, preset_id)
+);
+
+-- 알림 설정 테이블
+CREATE TABLE notification_settings (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  subscription_id UUID REFERENCES subscriptions(id) ON DELETE CASCADE,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('payment', 'expiry', 'benefit')),
+  days_before_alert INTEGER DEFAULT 1,
+  is_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 관리자 공지사항 테이블
+CREATE TABLE announcements (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  content TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 배너 광고 테이블
+CREATE TABLE banners (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title VARCHAR(100) NOT NULL,
+  image_url TEXT,
+  link_url TEXT,
+  position INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  start_date DATE,
+  end_date DATE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 인덱스 생성
+CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX idx_sub_products_subscription_id ON sub_products(subscription_id);
+CREATE INDEX idx_notification_settings_user_id ON notification_settings(user_id);
+CREATE INDEX idx_preset_likes_user_id ON preset_likes(user_id);
+CREATE INDEX idx_preset_likes_preset_id ON preset_likes(preset_id);
