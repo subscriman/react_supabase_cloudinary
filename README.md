@@ -64,6 +64,20 @@ subscription-manager/
 
 ## 🚀 빠른 시작
 
+### 🎯 이 템플릿 사용하기
+
+#### 방법 1: GitHub Template 사용 (권장)
+1. [이 저장소](https://github.com/subscriman/react_supabase_cloudinary)에서 **"Use this template"** 클릭
+2. 새 저장소 이름 입력 후 생성
+3. 생성된 저장소를 로컬에 클론
+
+#### 방법 2: 직접 클론
+```bash
+git clone https://github.com/subscriman/react_supabase_cloudinary.git my-app
+cd my-app
+rm -rf .git && git init  # 새 Git 히스토리 시작
+```
+
 ### 1. 저장소 클론
 ```bash
 git clone https://github.com/subscriman/react_supabase_cloudinary.git
@@ -115,6 +129,8 @@ npm run dev:web
 # 모바일 앱 실행
 npm run dev:mobile
 ```
+
+**📚 자세한 설정 방법은 [TEMPLATE_USAGE.md](TEMPLATE_USAGE.md)를 참고하세요.**
 
 ## 📋 설정 가이드
 

@@ -1,8 +1,9 @@
 import PushNotification from 'react-native-push-notification';
-import { Subscription, SubProduct } from '../../../shared/types';
+import { Subscription } from '../../../shared/types';
 
 export class NotificationService {
-  static init() {
+  // 알림 초기화
+  static initialize() {
     PushNotification.configure({
       onRegister: function (token) {
         console.log('TOKEN:', token);
@@ -18,104 +19,55 @@ export class NotificationService {
       popInitialNotification: true,
       requestPermissions: true,
     });
-
-    PushNotification.createChannel(
-      {
-        channelId: 'subscription-alerts',
-        channelName: '구독 알림',
-        channelDescription: '구독 상품 결제일 및 만료일 알림',
-        playSound: true,
-        soundName: 'default',
-        importance: 4,
-        vibrate: true,
-      },
-      (created) => console.log(`createChannel returned '${created}'`)
-    );
   }
 
-  static schedulePaymentNotification(subscription: Subscription, daysBeforeAlert: number = 1) {
+  // 결제일 알림 스케줄링
+  static schedulePaymentAlert(subscription: Subscription, daysBefore: number = 1) {
     if (!subscription.paymentDate) return;
 
     const alertDate = new Date(subscription.paymentDate);
-    alertDate.setDate(alertDate.getDate() - daysBeforeAlert);
-
-    if (alertDate <= new Date()) return; // 이미 지난 날짜면 스케줄하지 않음
+    alertDate.setDate(alertDate.getDate() - daysBefore);
 
     PushNotification.localNotificationSchedule({
       id: `payment-${subscription.id}`,
-      channelId: 'subscription-alerts',
-      title: '결제일 알림',
-      message: `${subscription.name} 결제일이 ${daysBeforeAlert}일 남았습니다.`,
+      title: '결제 예정 알림',
+      message: `${subscription.name} 결제일이 ${daysBefore}일 남았습니다.`,
       date: alertDate,
-      allowWhileIdle: true,
+      repeatType: 'month',
     });
   }
 
-  static scheduleExpiryNotification(subscription: Subscription, daysBeforeAlert: number = 1) {
-    if (!subscription.expiryDate) return;
+  // 혜택 만료 알림 스케줄링
+  static scheduleBenefitAlert(subscription: Subscription, daysBefore: number = 3) {
+    subscription.subProducts.forEach((subProduct) => {
+      if (subProduct.expiryDate && !subProduct.isUsed) {
+        const alertDate = new Date(subProduct.expiryDate);
+        alertDate.setDate(alertDate.getDate() - daysBefore);
 
-    const alertDate = new Date(subscription.expiryDate);
-    alertDate.setDate(alertDate.getDate() - daysBeforeAlert);
-
-    if (alertDate <= new Date()) return;
-
-    PushNotification.localNotificationSchedule({
-      id: `expiry-${subscription.id}`,
-      channelId: 'subscription-alerts',
-      title: '만료일 알림',
-      message: `${subscription.name} 만료일이 ${daysBeforeAlert}일 남았습니다.`,
-      date: alertDate,
-      allowWhileIdle: true,
+        PushNotification.localNotificationSchedule({
+          id: `benefit-${subProduct.id}`,
+          title: '혜택 만료 예정',
+          message: `${subProduct.name}이(가) ${daysBefore}일 후 만료됩니다.`,
+          date: alertDate,
+        });
+      }
     });
   }
 
-  static scheduleBenefitNotification(subProduct: SubProduct, daysBeforeAlert: number = 1) {
-    if (!subProduct.expiryDate) return;
+  // 모든 알림 스케줄링
+  static scheduleAllNotifications(
+    subscription: Subscription,
+    settings: { paymentAlert?: number; benefitAlert?: number } = {}
+  ) {
+    const { paymentAlert = 1, benefitAlert = 3 } = settings;
 
-    const alertDate = new Date(subProduct.expiryDate);
-    alertDate.setDate(alertDate.getDate() - daysBeforeAlert);
-
-    if (alertDate <= new Date()) return;
-
-    PushNotification.localNotificationSchedule({
-      id: `benefit-${subProduct.id}`,
-      channelId: 'subscription-alerts',
-      title: '혜택 만료 알림',
-      message: `${subProduct.name} 혜택이 ${daysBeforeAlert}일 후 만료됩니다.`,
-      date: alertDate,
-      allowWhileIdle: true,
-    });
+    this.schedulePaymentAlert(subscription, paymentAlert);
+    this.scheduleBenefitAlert(subscription, benefitAlert);
   }
 
-  static cancelNotification(id: string) {
-    PushNotification.cancelLocalNotifications({ id });
-  }
-
-  static cancelAllNotifications() {
-    PushNotification.cancelAllLocalNotifications();
-  }
-
-  // 구독 상품의 모든 알림 스케줄링
-  static scheduleAllNotifications(subscription: Subscription, settings: {
-    paymentAlert?: number;
-    expiryAlert?: number;
-    benefitAlert?: number;
-  } = {}) {
-    const {
-      paymentAlert = 1,
-      expiryAlert = 1,
-      benefitAlert = 1
-    } = settings;
-
-    // 결제일 알림
-    this.schedulePaymentNotification(subscription, paymentAlert);
-    
-    // 만료일 알림
-    this.scheduleExpiryNotification(subscription, expiryAlert);
-
-    // 서브 상품 혜택 알림
-    subscription.subProducts?.forEach(subProduct => {
-      this.scheduleBenefitNotification(subProduct, benefitAlert);
-    });
+  // 특정 구독의 모든 알림 취소
+  static cancelSubscriptionNotifications(subscriptionId: string) {
+    PushNotification.cancelLocalNotification(`payment-${subscriptionId}`);
+    // 서브 상품 알림들도 취소해야 하지만, ID를 모르므로 전체 취소 후 재설정하는 방식 권장
   }
 }
