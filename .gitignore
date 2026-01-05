@@ -109,3 +109,23 @@ mobile/android/app/src/main/res/drawable-*
 mobile/android/app/src/main/res/raw/
 mobile/ios/main.jsbundle
 mobile/ios/main.jsbundle.meta
+
+# Android
+mobile/android/.gradle/
+mobile/android/.idea/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/.gradle/
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/build/
+mobile/ios/*.xcworkspace/xcuserdata/
+
+# IDE and Editor files
+mobile/.claude/
+.claude/
+
+# Metro
+mobile/.metro-health-check*
