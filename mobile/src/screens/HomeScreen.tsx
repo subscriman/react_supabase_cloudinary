@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { SubscriptionService } from '../services/subscriptionService';
 import { SubscriptionPreset } from '../../../shared/types';
+import { Logger } from '../services/loggerService';
+import { Timber } from '../services/timberService';
 
 interface HomeScreenProps {
   navigation: any;
@@ -20,13 +22,28 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [banners, setBanners] = useState<any[]>([]);
 
   useEffect(() => {
+    // 앱 시작 로그
+    Logger.info('HomeScreen 마운트됨');
+    Timber.logAppLifecycle('HomeScreen_Mount');
+    
     loadOfficialPresets();
     loadBanners();
   }, []);
 
   const loadOfficialPresets = async () => {
-    const presets = await SubscriptionService.getPresets(true);
-    setOfficialPresets(presets);
+    try {
+      Logger.info('공식 프리셋 로드 시작');
+      Timber.info('HomeScreen', '공식 프리셋 로드 시작');
+      
+      const presets = await SubscriptionService.getPresets(true);
+      setOfficialPresets(presets);
+      
+      Logger.info(`공식 프리셋 로드 완료: ${presets.length}개`);
+      Timber.info('HomeScreen', `공식 프리셋 로드 완료: ${presets.length}개`);
+    } catch (error) {
+      Logger.error('공식 프리셋 로드 실패', error);
+      Timber.error('HomeScreen', `공식 프리셋 로드 실패: ${JSON.stringify(error)}`);
+    }
   };
 
   const loadBanners = async () => {
@@ -48,6 +65,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const handlePresetSelect = (preset: SubscriptionPreset) => {
+    Logger.logUserAction('프리셋 선택', 'HomeScreen', { presetName: preset.name });
+    Timber.logUserAction('프리셋 선택', 'HomeScreen', { presetName: preset.name });
+    
     if (preset.name.includes('T우주')) {
       navigation.navigate('TWorldPreset', { preset });
     } else {
@@ -56,6 +76,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const handleDirectRegistration = () => {
+    Logger.logUserAction('직접 등록 버튼 클릭', 'HomeScreen');
+    Timber.logUserAction('직접 등록 버튼 클릭', 'HomeScreen');
     navigation.navigate('CreateSubscription');
   };
 
@@ -136,6 +158,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <Text style={styles.actionButtonText}>사용자 프리셋</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 개발자 도구 */}
+      {__DEV__ && (
+        <TouchableOpacity
+          style={styles.devButton}
+          onPress={() => navigation.navigate('LogTest')}
+        >
+          <Text style={styles.devButtonText}>🔧 로그 테스트</Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 };
@@ -258,6 +290,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  devButton: {
+    margin: 20,
+    backgroundColor: '#28a745',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  devButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '500',
