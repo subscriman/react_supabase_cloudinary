@@ -242,6 +242,50 @@ cd mobile && npx react-native run-ios
 # ios/SubscriptionManager/Info.plist
 ```
 
+### 🪵 Timber 로깅 시스템 (Android)
+이 템플릿에는 외부에서 컴퓨터 연결 없이 로그를 확인할 수 있는 Timber 로깅 시스템이 포함되어 있습니다.
+
+#### 주요 기능
+- **실시간 Android logcat 출력**: Timber를 통한 실시간 로그 확인
+- **로컬 파일 저장**: `Downloads/subscri` 폴더에 일별 로그 파일 저장
+- **이중 로깅 시스템**: 콘솔 출력 + 파일 저장 + Android logcat
+- **자동 파일 관리**: 7일치 로그 보관, 오래된 파일 자동 삭제
+
+#### 로그 확인 방법
+1. **앱 내에서 확인**:
+   - 홈 화면 → "🔧 로그 테스트" 버튼 (개발 모드에서만 표시)
+   - "로그 디렉토리 확인" → "로그 내용 확인"
+
+2. **파일 관리자에서 확인**:
+   - `Downloads/subscri/app-YYYY-MM-DD.log` 파일 직접 열기
+
+3. **Android logcat으로 실시간 확인**:
+   ```bash
+   # ADB 명령어
+   adb logcat | grep SubscriManager
+   
+   # 특정 태그만 확인
+   adb logcat | grep "UserAction:"
+   adb logcat | grep "API:"
+   ```
+
+4. **로그 뷰어 앱 사용** (추천):
+   - Google Play Store에서 "Logcat Reader" 앱 설치
+   - `SubscriManager` 태그로 필터링하여 실시간 로그 확인
+
+#### 로그 파일 위치
+```
+Android 경로: /storage/emulated/0/Download/subscri/
+파일명 형식: app-2026-01-06.log
+```
+
+#### 로그 종류
+- **사용자 액션**: 버튼 클릭, 화면 이동 등
+- **API 호출**: 서버 통신 성공/실패
+- **앱 생명주기**: 화면 마운트, 언마운트
+- **구독 관련**: 구독 생성, 수정, 삭제
+- **오류 로그**: 예외 상황 및 에러 정보
+
 ### 푸시 알림 설정
 ```bash
 # Firebase 프로젝트 생성 (선택사항)
@@ -314,6 +358,8 @@ xcodebuild -workspace SubscriptionManager.xcworkspace -scheme SubscriptionManage
 - **PROJECT_FEATURES.md**: 기능 상세 설명
 - **docs/setup.md**: Supabase 설정 가이드
 - **docs/cloudinary-setup.md**: Cloudinary 설정 가이드
+- **mobile/README-TIMBER-LOGGING.md**: Timber 로깅 시스템 상세 가이드
+- **mobile/README-APK-BUILD.md**: Android APK 빌드 가이드
 
 ### 도움말
 - [React Native 공식 문서](https://reactnative.dev/docs/getting-started)
@@ -361,7 +407,19 @@ cd ios && rm -rf Pods Podfile.lock && pod install
 cd android && ./gradlew clean
 ```
 
-#### 4. 웹 빌드 오류
+#### 4. Timber 로그가 보이지 않는 경우
+```bash
+# 로그 디렉토리 권한 확인
+# 앱에서 "🔧 로그 테스트" → "디렉토리 수동 생성" 실행
+
+# Android logcat 확인
+adb logcat | grep SubscriManager
+
+# 로그 파일 직접 확인
+adb shell ls /storage/emulated/0/Download/subscri/
+```
+
+#### 5. 웹 빌드 오류
 ```bash
 # 의존성 재설치
 cd web
@@ -381,6 +439,7 @@ npm install
 - [ ] 프리셋 등록/수정 기능 테스트 완료
 - [ ] 배너 이미지 업로드 테스트 완료
 - [ ] 모바일 앱 실행 테스트 (선택사항)
+- [ ] Timber 로깅 시스템 테스트 완료 (Android)
 - [ ] 프로젝트 정보 커스터마이징 완료
 - [ ] Git 저장소 초기화 및 첫 커밋 완료
 
