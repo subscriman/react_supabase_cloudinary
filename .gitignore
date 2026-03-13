@@ -129,3 +129,5 @@ mobile/.claude/
 
 # Metro
 mobile/.metro-health-check*
+# Local Netlify folder
+.netlify

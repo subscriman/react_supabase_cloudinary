@@ -6,6 +6,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "postinstall": "node ./scripts/patch-ios-boost-podspec.js",
     "start": "react-native start",
     "test": "jest",
     "build:debug": "cd android && ./gradlew assembleDebug",
@@ -19,6 +20,7 @@
     "deploy:all": "./scripts/build-and-copy.sh all"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.19.0",
     "react": "18.2.0",
     "react-native": "0.72.6",
     "react-native-fs": "^2.20.0",
@@ -42,6 +44,6 @@
     "typescript": "4.8.4"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18 <21"
   }
 }

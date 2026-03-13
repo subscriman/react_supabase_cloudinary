@@ -32,18 +32,27 @@ subscription-manager/
 ## 3. 환경 변수 설정
 
 ### 3.1 공통 환경 변수
-`.env` 파일 생성:
+`.env` 파일 생성 (`cp .env.example .env`):
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ### 3.2 모바일 앱 환경 변수
-`mobile/.env` 파일 생성:
+`mobile/.env` 파일 생성 (`cp mobile/.env.example mobile/.env`):
 ```env
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+### 3.3 웹 환경 변수
+`web/.env.local` 파일 생성 (`cp web/.env.local.example web/.env.local`)
+
+### 3.4 시크릿 관리 규칙
+1. 실제 키/시크릿은 `.env`, `mobile/.env`, `web/.env.local`에만 저장
+2. Git에는 예시 파일(`*.example`)만 커밋
+3. CI/배포 환경(Netlify 등)은 플랫폼 시크릿 변수로 등록
+4. Android Maps 키는 `~/.gradle/gradle.properties` 또는 CI 변수(`GOOGLE_MAPS_API_KEY`)로만 주입
 
 ## 4. 개발 환경 설정
 
@@ -58,7 +67,7 @@ cd web && npm install
 ```
 
 ### 4.2 React Native 개발 환경
-1. Node.js 16+ 설치
+1. Node.js LTS 20 사용 (`nvm use` 또는 `nvm install 20 && nvm use`)
 2. React Native CLI 설치: `npm install -g react-native-cli`
 3. Android Studio (Android) 또는 Xcode (iOS) 설치
 4. 에뮬레이터/시뮬레이터 설정

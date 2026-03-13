@@ -20,6 +20,9 @@
   ],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=18 <21"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
     "cloudinary": "^2.8.0",

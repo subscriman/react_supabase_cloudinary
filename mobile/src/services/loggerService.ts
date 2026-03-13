@@ -1,6 +1,7 @@
 import RNFS from 'react-native-fs';
 import { logger, configLoggerType, consoleTransport } from 'react-native-logs';
 import { Timber } from './timberService';
+import { Platform } from 'react-native';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -23,15 +24,35 @@ class LoggerService {
   }
 
   private getBestLogDirectory(): string {
-    // 우선순위에 따라 경로 선택
-    const possiblePaths = [
-      `${RNFS.DownloadDirectoryPath}/subscri`,           // Downloads/subscri (가장 접근하기 쉬움)
-      `${RNFS.ExternalDirectoryPath}/subscri`,           // 외부 앱 전용 폴더
-      `${RNFS.DocumentDirectoryPath}/subscri`,           // 내부 Documents 폴더
+    const folderName = 'subscri';
+    const androidBasePaths = [
+      RNFS.DownloadDirectoryPath,  // Downloads/subscri (가장 접근하기 쉬움)
+      RNFS.ExternalDirectoryPath,  // 외부 앱 전용 폴더
+      RNFS.DocumentDirectoryPath,  // 내부 Documents 폴더
+    ];
+    const iosBasePaths = [
+      RNFS.DocumentDirectoryPath,  // 앱 Documents (쓰기 가능)
+      RNFS.LibraryDirectoryPath,   // 앱 Library (쓰기 가능)
+      RNFS.TemporaryDirectoryPath, // 임시 폴더
     ];
 
-    // 첫 번째로 사용 가능한 경로 반환
-    return possiblePaths[0]; // Downloads 폴더 우선 사용
+    const basePaths = Platform.OS === 'android' ? androidBasePaths : iosBasePaths;
+    const validBasePath = basePaths.find(
+      p => typeof p === 'string' && p.trim().length > 0 && p !== 'undefined',
+    );
+
+    // 최후 fallback: DocumentDirectoryPath 사용
+    const fallbackBase = RNFS.DocumentDirectoryPath || RNFS.TemporaryDirectoryPath || '.';
+    const selectedBasePath = validBasePath || fallbackBase;
+    return `${selectedBasePath}/${folderName}`;
+  }
+
+  private async ensureLogDirectoryExists(): Promise<void> {
+    const exists = await RNFS.exists(this.logDirectory);
+    if (!exists) {
+      await RNFS.mkdir(this.logDirectory);
+      console.log(`로그 디렉토리 생성: ${this.logDirectory}`);
+    }
   }
 
   private createLogDirectorySync(): void {
@@ -49,11 +70,7 @@ class LoggerService {
 
   private async createLogDirectory(): Promise<void> {
     try {
-      const exists = await RNFS.exists(this.logDirectory);
-      if (!exists) {
-        await RNFS.mkdir(this.logDirectory);
-        console.log(`로그 디렉토리 생성: ${this.logDirectory}`);
-      }
+      await this.ensureLogDirectoryExists();
       
       // 오래된 로그 파일 정리
       await this.cleanupOldLogs();
@@ -182,6 +199,7 @@ class LoggerService {
   // 로그 파일 관리 메서드들
   async ensureLogFile(): Promise<void> {
     try {
+      await this.ensureLogDirectoryExists();
       const logFilePath = this.getCurrentLogFile();
       const exists = await RNFS.exists(logFilePath);
       

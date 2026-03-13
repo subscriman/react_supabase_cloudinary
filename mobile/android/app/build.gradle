@@ -74,6 +74,21 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+
+        // Maps 키는 아래 우선순위로 조회
+        // 1) Gradle property: GOOGLE_MAPS_API_KEY
+        // 2) Gradle property: MAPS_API_KEY
+        // 3) Environment variable: GOOGLE_MAPS_API_KEY
+        // 4) Environment variable: MAPS_API_KEY
+        def googleMapsApiKey =
+            project.findProperty("GOOGLE_MAPS_API_KEY")
+            ?: project.findProperty("MAPS_API_KEY")
+            ?: System.getenv("GOOGLE_MAPS_API_KEY")
+            ?: System.getenv("MAPS_API_KEY")
+            ?: ""
+        manifestPlaceholders = [
+            GOOGLE_MAPS_API_KEY: googleMapsApiKey
+        ]
     }
 
     signingConfigs {

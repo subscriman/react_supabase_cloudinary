@@ -86,20 +86,24 @@ cd react_supabase_cloudinary
 
 ### 2. 환경 변수 설정
 ```bash
-# 루트 디렉토리에 .env 파일 생성
+# 루트(웹/스크립트) 환경 변수
 cp .env.example .env
 
-# 웹 프로젝트에 .env.local 파일 생성
-cp .env.example web/.env.local
+# 웹 프로젝트 환경 변수
+cp web/.env.local.example web/.env.local
 
-# 모바일 프로젝트에 .env 파일 생성
-cp .env.example mobile/.env
+# 모바일 프로젝트 환경 변수
+cp mobile/.env.example mobile/.env
 ```
 
-각 파일에 실제 API 키를 입력하세요.
+각 파일에 실제 API 키를 입력하세요. (`.env`, `mobile/.env`, `web/.env.local`은 Git 커밋 금지)
 
 ### 3. 의존성 설치
 ```bash
+# Node LTS 고정
+nvm install 20
+nvm use
+
 # 전체 프로젝트 설치
 npm run setup
 
