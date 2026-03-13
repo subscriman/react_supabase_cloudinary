@@ -1,6 +1,7 @@
-# 구독 관리 앱 (Subscription Manager)
+# 구독 관리 앱 템플릿
 
-React Native + Supabase + Cloudinary를 활용한 구독 서비스 관리 앱
+React Native + Next.js + Supabase + Cloudinary 기반의 구독/멤버십 관리 앱 스타터입니다.
+모바일 앱, 관리자 웹, Android/iOS/Netlify 설정이 함께 포함되어 있어 새 프로젝트의 시작점으로 바로 사용할 수 있습니다.
 
 ## 🚀 주요 기능
 
@@ -64,27 +65,26 @@ subscription-manager/
 
 ## 🚀 빠른 시작
 
-### 🎯 이 템플릿 사용하기
+### 1. 템플릿으로 새 저장소 만들기
 
-#### 방법 1: GitHub Template 사용 (권장)
-1. [이 저장소](https://github.com/subscriman/react_supabase_cloudinary)에서 **"Use this template"** 클릭
-2. 새 저장소 이름 입력 후 생성
-3. 생성된 저장소를 로컬에 클론
+권장 방식:
 
-#### 방법 2: 직접 클론
+1. GitHub에서 **Use this template** 사용
+2. 새 저장소 생성
+3. 로컬에 클론
+
+직접 복사/클론 방식:
+
 ```bash
 git clone https://github.com/subscriman/react_supabase_cloudinary.git my-app
 cd my-app
-rm -rf .git && git init  # 새 Git 히스토리 시작
+rm -rf .git
+git init
 ```
 
-### 1. 저장소 클론
-```bash
-git clone https://github.com/subscriman/react_supabase_cloudinary.git
-cd react_supabase_cloudinary
-```
+복사 직후에 바꿔야 하는 항목은 [docs/프로젝트_복사_치환_체크리스트.md](docs/프로젝트_복사_치환_체크리스트.md)를 먼저 확인하세요.
 
-### 2. 환경 변수 설정
+### 2. 환경 변수 파일 생성
 ```bash
 # 루트(웹/스크립트) 환경 변수
 cp .env.example .env
@@ -112,7 +112,12 @@ cd web && npm install
 cd mobile && npm install
 ```
 
-### 4. Supabase 설정
+### 4. iOS 의존성 설치
+```bash
+cd mobile/ios && pod install
+```
+
+### 5. Supabase 설정
 ```bash
 # Supabase CLI 설치 (macOS)
 brew install supabase/tap/supabase
@@ -125,7 +130,7 @@ supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 ```
 
-### 5. 개발 서버 실행
+### 6. 개발 서버 실행
 ```bash
 # 웹 관리자 실행
 npm run dev:web
@@ -134,7 +139,23 @@ npm run dev:web
 npm run dev:mobile
 ```
 
-**📚 자세한 설정 방법은 [TEMPLATE_USAGE.md](TEMPLATE_USAGE.md)를 참고하세요.**
+추가 문서:
+
+- 템플릿 전체 사용 흐름: [docs/TEMPLATE_USAGE.md](docs/TEMPLATE_USAGE.md)
+- 복사 후 치환 체크리스트: [docs/프로젝트_복사_치환_체크리스트.md](docs/프로젝트_복사_치환_체크리스트.md)
+- 환경 이식 기준: [docs/2026-03-09_프로젝트_환경_이식_가이드.md](docs/2026-03-09_프로젝트_환경_이식_가이드.md)
+
+## 📋 템플릿 기본값
+
+이 저장소는 아래 값을 기본 예제로 포함합니다. 새 프로젝트에서는 필요에 따라 교체하세요.
+
+- Android package: `com.subscri.manager`
+- iOS target/project: `SubscriptionManager`
+- 모바일 앱 이름: `구독 관리`
+- Cloudinary upload preset 예시: `subscription_manager`
+- Netlify 사이트 예시: `subman-kiro-admin`
+
+치환 대상 전체 목록은 [docs/프로젝트_복사_치환_체크리스트.md](docs/프로젝트_복사_치환_체크리스트.md)에 정리되어 있습니다.
 
 ## 📋 설정 가이드
 
@@ -176,8 +197,8 @@ npm run dev:mobile       # 모바일 앱
 
 # 빌드
 npm run build:web        # 웹 프로덕션 빌드
-npm run build:android    # Android APK 빌드
-npm run build:ios        # iOS 빌드
+cd mobile && npm run build:debug    # Android Debug APK 빌드
+cd mobile && npm run build:release  # Android Release APK 빌드
 
 # 데이터베이스
 supabase db push         # 마이그레이션 적용
@@ -186,8 +207,8 @@ supabase db pull         # 원격 변경사항 가져오기
 
 ## 📱 지원 플랫폼
 
-- **iOS**: 13.0+
-- **Android**: API 21+ (Android 5.0)
+- **iOS**: 15.1+
+- **Android**: API 23+ (Android 6.0)
 - **Web**: Chrome, Safari, Firefox 최신 버전
 
 ## 🤝 기여하기
@@ -202,7 +223,7 @@ supabase db pull         # 원격 변경사항 가져오기
 
 MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참고하세요.
 
-## 📞 문의
+## 📞 템플릿 출처
 
-- 프로젝트 링크: [https://github.com/subscriman/react_supabase_cloudinary](https://github.com/subscriman/react_supabase_cloudinary)
+- 저장소: [https://github.com/subscriman/react_supabase_cloudinary](https://github.com/subscriman/react_supabase_cloudinary)
 - 이슈 리포트: [Issues](https://github.com/subscriman/react_supabase_cloudinary/issues)

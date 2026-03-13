@@ -1,4 +1,8 @@
-# 구독 관리 앱 설정 가이드
+# 구독 관리 앱 템플릿 설정 가이드
+
+이 문서는 템플릿을 새 프로젝트로 시작한 뒤 환경을 연결하는 기본 설정 가이드입니다.
+
+전체 치환 항목은 [docs/프로젝트_복사_치환_체크리스트.md](./프로젝트_복사_치환_체크리스트.md)를 먼저 참고하세요.
 
 ## 1. 프로젝트 구조
 ```
@@ -85,17 +89,21 @@ npm run dev:web
 
 ### 5.1 웹 관리자 배포 (Netlify)
 1. GitHub 저장소 연결
-2. Build command: `cd web && npm run build`
-3. Publish directory: `web/out`
-4. 환경 변수 설정
+2. Base directory: `web`
+3. Build command: `npm run build`
+4. Publish directory: `.next`
+5. 환경 변수 설정
 
 ### 5.2 모바일 앱 빌드
 ```bash
-# Android
-cd mobile && npm run build:android
+# Android Debug APK
+cd mobile && npm run build:debug
 
-# iOS
-cd mobile && npm run build:ios
+# Android Release APK
+cd mobile && npm run build:release
+
+# iOS는 Xcode 또는 react-native run-ios 기준으로 빌드/실행
+cd mobile && npx react-native run-ios
 ```
 
 ## 6. 초기 데이터 설정
@@ -127,7 +135,19 @@ cd mobile && npm run build:ios
 3. 다른 기기에서 프리셋 가져오기
 4. 프리셋 적용 및 커스터마이징
 
-## 8. 주요 기능 구현 상태
+## 8. 템플릿 기준 유지값
+
+새 프로젝트에서도 그대로 유지해도 되는 권장 기준:
+
+- Node 20
+- React Native 0.72.6
+- Next.js 14
+- Android `minSdkVersion 23`
+- AGP 7.4.2 / Gradle 7.5.1 / Kotlin 1.8.22
+- `newArchEnabled=false`
+- `hermesEnabled=true`
+
+## 9. 주요 기능 구현 상태
 
 ✅ 완료:
 - 기본 데이터베이스 스키마

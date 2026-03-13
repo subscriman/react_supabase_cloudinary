@@ -2,6 +2,7 @@
   "name": "subscription-manager-mobile",
   "version": "0.0.1",
   "private": true,
+  "description": "React Native mobile app starter for the subscription manager template",
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",

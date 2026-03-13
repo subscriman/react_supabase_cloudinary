@@ -1,7 +1,7 @@
 {
   "name": "subscription-manager",
   "version": "1.0.0",
-  "description": "구독 상품 관리 앱",
+  "description": "구독/멤버십 관리 앱 템플릿 (React Native + Next.js + Supabase + Cloudinary)",
   "main": "index.js",
   "scripts": {
     "setup": "npm run setup:mobile && npm run setup:web",
@@ -16,7 +16,11 @@
     "subscription",
     "management",
     "react-native",
-    "supabase"
+    "supabase",
+    "template",
+    "starter",
+    "nextjs",
+    "netlify"
   ],
   "author": "",
   "license": "MIT",
