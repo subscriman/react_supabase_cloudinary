@@ -38,6 +38,29 @@ const inputClassName =
 const sectionCardClassName =
   'rounded-[30px] border border-white/70 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur';
 
+function getOfficialSourceLabel(url: string, index: number) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+
+    if (host.includes('kt.com')) {
+      return `KT 공식 페이지 ${index + 1}`;
+    }
+
+    if (host.includes('tworld.co.kr')) {
+      return `SKT 공식 페이지 ${index + 1}`;
+    }
+
+    if (host.includes('lguplus.com')) {
+      return `LG U+ 공식 페이지 ${index + 1}`;
+    }
+
+    return `${host} ${index + 1}`;
+  } catch {
+    return `공식 페이지 ${index + 1}`;
+  }
+}
+
 export default function UserMembershipWorkspace({
   seedData,
 }: UserMembershipWorkspaceProps) {
@@ -74,6 +97,10 @@ export default function UserMembershipWorkspace({
 
   const selectedPreset =
     presets.find((preset) => preset.seedKey === selectedSeedKey) || null;
+  const officialSourceUrls = selectedPreset?.template.seedMeta?.sourceUrls || [];
+  const sourceCheckedAt =
+    selectedPreset?.template.seedMeta?.sourceCheckedAt ||
+    seedData.generatedFrom.sourceCheckedAt;
 
   const savedCountBySeed = useMemo(() => {
     return savedConfigs.reduce<Record<string, number>>((acc, config) => {
@@ -563,6 +590,49 @@ export default function UserMembershipWorkspace({
                       />
                     </label>
                   </div>
+                </section>
+
+                <section className={sectionCardClassName}>
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">
+                        통신사 공식 안내 URL
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        혜택 상세 조건과 최신 안내는 아래 통신사 페이지에서 직접 확인할 수 있습니다.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
+                      확인 기준 {sourceCheckedAt}
+                    </span>
+                  </div>
+
+                  {officialSourceUrls.length > 0 ? (
+                    <div className="mt-5 space-y-3">
+                      {officialSourceUrls.map((url, index) => (
+                        <div
+                          key={`${selectedPreset.seedKey}-source-${index}`}
+                          className="rounded-[24px] border border-slate-200 bg-slate-50 p-4"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--brand-teal)]">
+                            {getOfficialSourceLabel(url, index)}
+                          </p>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 block break-all text-sm leading-6 text-slate-700 underline decoration-slate-300 underline-offset-4 transition hover:text-[var(--brand-coral)] hover:decoration-[var(--brand-coral)]"
+                          >
+                            {url}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                      이 프리셋에는 연결된 공식 안내 URL이 아직 없습니다.
+                    </div>
+                  )}
                 </section>
 
                 <section className={sectionCardClassName}>
