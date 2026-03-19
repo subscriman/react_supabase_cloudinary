@@ -1,0 +1,1725 @@
+{
+  "version": "draft-2026-03-18",
+  "generatedFrom": {
+    "documentPath": "docs/통신3사_멤버십_혜택_프리셋_분석.md",
+    "sourceCheckedAt": "2026-03-18"
+  },
+  "limitations": [
+    "KT 상시 제휴 전체 목록은 공개 웹에서 일괄 노출되지 않아 2차 보강이 필요하다.",
+    "사진 URL은 아직 수집하지 않아 모든 프리셋의 photos는 빈 배열로 둔다.",
+    "현재 앱 스키마에는 반복, 연간 한도, 이벤트 윈도우, 쿠폰 만료 전용 컬럼이 없어 template.seedMeta에 초안 형태로 저장한다."
+  ],
+  "sources": {
+    "kt": [
+      "https://membership.kt.com/vip/choice/ChoiceInfo.do",
+      "https://membership.kt.com/vip/choice/VvipChoiceInfo.do",
+      "https://membership.kt.com/vip/choice/VipListHtml.json",
+      "https://membership.kt.com/vip/choice/VvipChoiceListHtml.json",
+      "https://product.kt.com/benefit/membership/web/long_customer.html",
+      "https://product.kt.com/benefit/membership/web/membership03.html",
+      "https://product.kt.com/benefit/membership/web/membership06.html",
+      "https://product.kt.com/benefit/membership/web/membership09.html",
+      "https://product.kt.com/benefit/membership/web/point.html",
+      "https://product.kt.com/benefit/membership/web/etc.html"
+    ],
+    "skt": [
+      "https://sktmembership.tworld.co.kr/mps/pc-bff/sktmembership/main.do",
+      "https://sktmembership.tworld.co.kr/mps/pc-bff/benefitbrand/list-tab1.do",
+      "https://sktmembership.tworld.co.kr/mps/pc-bff/program/vippick.do",
+      "https://sktmembership.tworld.co.kr/mps/pc-bff/program/tday.do"
+    ],
+    "lguplus": [
+      "https://www.lguplus.com/benefit-membership",
+      "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=01&urcMbspBnftDivsCd=01",
+      "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=01&urcMbspBnftDivsCd=02",
+      "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=02",
+      "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=03"
+    ]
+  },
+  "catalogs": {
+    "kt": {
+      "carrier": "kt",
+      "coverageStatus": "partial_public_web",
+      "summary": "VIP/VVIP 초이스, 장기고객, LTE 데이터 룰렛, 패밀리박스, 포인트파크, 인터넷할인, 제휴 상조까지는 확인했지만 상시 제휴 전체 목록은 2차 보강이 필요하다.",
+      "highPriorityTrackables": [
+        "VIP 초이스",
+        "VVIP 초이스",
+        "장기고객 쿠폰",
+        "LTE 데이터 룰렛",
+        "패밀리박스"
+      ],
+      "recurringTrackables": [
+        {
+          "name": "VIP 초이스",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 6,
+          "notes": "한 달에 한 번 사용하면 같은 달 다른 초이스는 사용 불가"
+        },
+        {
+          "name": "VVIP 초이스",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 12,
+          "notes": "공개 웹 안내상 기본 6회 + 프로모션 6회 구조가 함께 표기됨"
+        },
+        {
+          "name": "장기고객 쿠폰",
+          "usageCycleUnit": "year",
+          "usageCycleLimit": null,
+          "annualLimitOptions": [
+            6,
+            8,
+            10
+          ],
+          "couponValidityRule": "쿠폰 발급 후 1년"
+        },
+        {
+          "name": "LTE 데이터 룰렛",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "eventWindowRule": "매월 25일~말일 응모",
+          "couponValidityRule": "당첨 데이터는 다음달 말일까지"
+        },
+        {
+          "name": "패밀리박스 보너스 데이터",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "couponValidityRule": "지급 시점 기준 다음달 말일까지 유지"
+        },
+        {
+          "name": "패밀리박스 미션 리워드",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "monthlyLimit": 2000,
+          "unit": "MB"
+        },
+        {
+          "name": "패밀리박스 가족폰 이어쓰기",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "monthlyLimit": 2000,
+          "unit": "MB",
+          "maxDurationMonths": 12
+        }
+      ],
+      "vipChoiceCommonBenefits": [
+        "롯데시네마: 무료영화 예매(2D 일반)",
+        "스타벅스: 아메리카노 Short 무료 또는 4천원 할인",
+        "메가MGC커피: 아메리카노 2잔 무료",
+        "배스킨라빈스: 파인트 50% 할인",
+        "차방정: 플러스 멤버십 2개월 무료, 연 2회",
+        "던킨: 아메리카노(S)+글레이즈드 무료",
+        "김캐디: 5,000원 할인",
+        "SNOW: VIP 구독권",
+        "CJ더마켓: 45% 할인 + 적립금 5,000점",
+        "밀리의 서재: 1개월 무료",
+        "달콤: 아메리카노 무료",
+        "플레이타임: 어린이 평일 이용권 7천원 할인",
+        "노보텔 앰배서더 동대문: 조식 2인 무료"
+      ],
+      "vvipChoiceBenefits": [
+        "롯데시네마: 생일 영화&팝콘 무료",
+        "꾸까: 생일 꽃다발 또는 슈가캔들 무료",
+        "스타벅스: 생일 조각케이크 + 음료 2잔 무료",
+        "도미노피자: 3만원 할인",
+        "할리스: 아메리카노 2잔 + 휘낭시에 2개 무료",
+        "이니스프리: 마스크팩 무료",
+        "배스킨라빈스: 파인트 무료 또는 블록팩 4개 무료",
+        "플레이타임: 어린이 평일 이용권 무료",
+        "꾸까: 꽃다발(M) 또는 캔들 패키지 무료",
+        "밀리의 서재: 3개월 무료",
+        "오토오아시스: 엔진오일 3만원 할인 + 정비 할인",
+        "블루보틀: 월별 운영 혜택/추첨형 혜택",
+        "VIPS: 스테이크 무료",
+        "서울스카이: 입장권 1+1"
+      ],
+      "longTermCouponExamples": [
+        "티빙 3,000원 할인",
+        "지니 스마트 음악감상 3,000원 할인",
+        "블라이스 셀렉트 3,000원 할인",
+        "밀리의서재 3,000원 할인",
+        "콴다 3,000원 할인",
+        "데이터 2GB",
+        "통화 100분",
+        "청소년 알 1만개",
+        "함께쓰는 로밍 3천원 할인",
+        "듀얼번호 Lite 3천원 할인",
+        "V컬러링 1개월",
+        "PC안심 2.0 Lite 1개월",
+        "인터넷지킴이 1개월",
+        "지니TV VOD 3천원 할인"
+      ],
+      "confirmedGroups": [
+        "VIP 초이스",
+        "VVIP 초이스",
+        "장기고객 혜택",
+        "LTE 데이터 룰렛",
+        "패밀리박스",
+        "포인트파크",
+        "인터넷할인 혜택",
+        "제휴 상조"
+      ]
+    },
+    "skt": {
+      "carrier": "skt",
+      "coverageStatus": "official_web_wide",
+      "summary": "공개 웹 기준 상시 제휴 브랜드 186개를 확인했고, 프리셋 관점에서는 VIP PICK, T day, 이마트, bhc, B tv/B tv cable, CGV가 핵심이다.",
+      "rules": [
+        "VIP PICK: 매월 1회 PICK, 연 12회",
+        "VIP PICK PLUS: PICK 사용 여부와 무관하게 사용 가능",
+        "CGV VIP PICK: 무료 3회 + 1+1 9회 = 연 12회",
+        "CGV 특별관 할인: 연 12회",
+        "T day: 매달 첫째 주, 매주 수요일 중심, 이벤트 기간 내 총 1회",
+        "bhc: 월 2회",
+        "이마트 VIP: 짝수월 7%, 홀수월 3%, 연간 한도 존재",
+        "B tv / B tv cable: 연 6회까지"
+      ],
+      "vipPickHighlights": [
+        "CGV: 영화 관람권 1장 무료 연 3회, 평일/주말 1+1 연 9회",
+        "T 우주패스: 월간 9,900원 할인 쿠폰 연 3회",
+        "T 우주패스: 월간 4,900원 할인 쿠폰 연 9회",
+        "크래프티드 플래츠 세트 특가 또는 파스타 무료",
+        "국내 라운지/마티나 골드 라운지 8,000원 할인",
+        "비에날씬 50% 할인",
+        "스피드메이트 엔진오일 할인",
+        "게임 카테고리 50% 할인 쿠폰",
+        "컬쳐랜드 상품권 7% 할인",
+        "CGV 특별관 할인",
+        "꾸까 전용 상품 할인",
+        "JAJU 할인",
+        "풀무원 할인",
+        "슈피겐 할인",
+        "퍼블로그 포토북 할인",
+        "TMAP 렌터카 1만원 할인"
+      ],
+      "tDayHighlights": [
+        "CGV 영화 티켓 8,500원 예매 + 매점 할인 쿠폰",
+        "착한소비 × 비즈링크 50% 할인",
+        "쉐이크쉑 30% 할인 + 애프터 쿠폰",
+        "샐러디 메인 메뉴 포함 7,000원 이상 구매 시 3,500원 할인",
+        "이니스프리 쿠폰/당첨형 이벤트"
+      ],
+      "programCounts": {
+        "totalBrands": 186,
+        "vipPickLinkedBrands": 10,
+        "tDayLinkedBrands": 4,
+        "globalBenefitsBrands": 5,
+        "zeroDayLinkedBrands": 1,
+        "esgLinkedBrands": 11,
+        "couponBrands": 76
+      },
+      "allBrands": [
+        "배스킨라빈스",
+        "파리바게뜨",
+        "CU",
+        "아웃백 스테이크하우스",
+        "이마트",
+        "뚜레쥬르",
+        "공차",
+        "도미노피자",
+        "롯데리아",
+        "세븐일레븐",
+        "폴 바셋",
+        "CGV",
+        "던킨",
+        "VIPS",
+        "롯데월드 어드벤처",
+        "11번가",
+        "메가MGC커피",
+        "피자헛",
+        "파파존스피자",
+        "SK렌터카",
+        "FLO",
+        "메가박스",
+        "엔제리너스",
+        "스피드메이트",
+        "bhc",
+        "제주항공",
+        "티웨이항공",
+        "원스토어",
+        "파리크라상",
+        "기프티콘",
+        "SK브로드밴드 B tv",
+        "G car",
+        "신라면세점",
+        "멕시카나",
+        "GS25",
+        "롯데월드 아쿠아리움",
+        "마티나 라운지",
+        "신세계면세점",
+        "유가네닭갈비",
+        "이월드",
+        "롯데월드 서울스카이",
+        "에버랜드",
+        "이랜드몰",
+        "서울랜드",
+        "드롭탑",
+        "백미당",
+        "이니스프리",
+        "롯데면세점",
+        "텐바이텐",
+        "키자니아",
+        "매드포갈릭",
+        "나뚜루&나뚜루시그니처",
+        "뽀로로파크",
+        "아쿠아플라넷",
+        "컬쳐랜드",
+        "미스터피자",
+        "워커힐호텔앤리조트",
+        "퍼블로그",
+        "아티제",
+        "SK스토아",
+        "빌리엔젤",
+        "티맵모빌리티",
+        "아쿠아필드",
+        "제주신화월드",
+        "롯데렌터카",
+        "반올림피자",
+        "핏펫",
+        "설악워터피아",
+        "빌리카",
+        "온더보더",
+        "그리팅",
+        "에버온",
+        "풀무원",
+        "파라다이스스파도고",
+        "청소연구소",
+        "톤28",
+        "SEA LIFE 부산아쿠아리움",
+        "캐리비안 베이",
+        "미스터힐링",
+        "신라아이파크면세점",
+        "원스토리",
+        "라그릴리아",
+        "여행자 보험",
+        "동구밭",
+        "제오헤어",
+        "아시아나 인터넷 면세점",
+        "노랑풍선 시티버스",
+        "안경매니저",
+        "타요키즈카페",
+        "제주삼다수",
+        "주렁주렁",
+        "B tv cable",
+        "미니창고 다락",
+        "피자알볼로",
+        "사보텐",
+        "파고다어학원",
+        "크래버대게나라",
+        "원마운트",
+        "T 우주 신한카드",
+        "뉴퍼마켓",
+        "경주뽀로로아쿠아빌리지",
+        "파스쿠찌",
+        "동원몰",
+        "티니핑월드 인 판교",
+        "씨네Q",
+        "현대면세점",
+        "제주관광공사 인터넷면세점",
+        "롯데월드 어드벤처 부산",
+        "타코벨",
+        "파고다인강",
+        "파라다이스시티 씨메르",
+        "T 멤버십 더블 체크카드(하나)",
+        "열린베이커리",
+        "무탄",
+        "뮤지엄 원",
+        "클럽디 오아시스",
+        "해피오더",
+        "네이처스케이프 플러스",
+        "허닭",
+        "해커스잡",
+        "광동상회",
+        "로렌츠",
+        "투어비스",
+        "YBM 전화화상",
+        "어바웃펫",
+        "브레댄코",
+        "여행가자고",
+        "하프클럽",
+        "슈퍼키친",
+        "보리보리",
+        "디자인밀",
+        "반려생활",
+        "사람인 멘토링매치",
+        "에필로우",
+        "후디스몰",
+        "VOG Hair",
+        "대구아쿠아리움",
+        "쿤달",
+        "셀퓨전씨",
+        "스피쿠스",
+        "부산엑스더스카이",
+        "SK매직",
+        "파라다이스시티 원더박스",
+        "T 멤버십 라이프 신한카드",
+        "Touch1카드(하나)",
+        "허그맘허그인",
+        "인터뷰박스",
+        "스코피",
+        "아떼",
+        "로봇랜드",
+        "리바이북",
+        "아로마티카",
+        "위미트",
+        "헉슬리",
+        "T 멤버십 더블 롯데 카드",
+        "컨티뉴",
+        "SK국제전화 00700",
+        "월스트리트 잉글리시",
+        "멍타냥택시",
+        "파고다원",
+        "르 스페이스",
+        "히바린",
+        "농협맛선",
+        "국개대표",
+        "원더파크/원더빌리지",
+        "파고다토쿨",
+        "21그램",
+        "오토카지",
+        "아이피아",
+        "T 멤버십 더블 롯데 체크카드",
+        "도그메이트",
+        "여수 유월드",
+        "어떠케어",
+        "자란다",
+        "런드리고",
+        "밀크T",
+        "엘리하이/엠베스트",
+        "캐리마켓",
+        "노트미",
+        "웅진플레이도시",
+        "아이러브탠",
+        "코드모스",
+        "더라운지",
+        "도원스타일",
+        "키디키디 몰",
+        "스몹"
+      ]
+    },
+    "lguplus": {
+      "carrier": "lguplus",
+      "coverageStatus": "official_api",
+      "summary": "공식 웹앱 API 기준 VIP콕, 기본 혜택, LG 패밀리 혜택, 우리동네멤버십까지 확인됐다. 프리셋 적합도는 VIP콕이 가장 높고, 기본 혜택은 월/일 제한이 있는 항목 위주로 골라 담는 것이 좋다.",
+      "vipCokRules": [
+        "대상: VVIP/VIP",
+        "VIP콕 내 제휴사 통합 월 1회",
+        "대부분 안내에 연 12회 가능 표기"
+      ],
+      "vipCokInventory": [
+        "스타벅스: VVIP 아메리카노 Tall 무료 또는 VIP 더블 사이즈업 무료",
+        "네이버플러스 멤버십: 1개월 무료 이용권",
+        "CGV: 무료 예매 연 3회 + 1+1 예매 연 9회, 월 1회",
+        "유독: 4,000원 할인",
+        "배스킨라빈스: 블록팩 1개 무료 교환",
+        "교보문고sam: 1개월 이용권",
+        "롯데월드 어드벤처: 종합이용권 42% 할인",
+        "롯데월드 아쿠아리움: 본인 40% 할인",
+        "서울스카이: 본인 30% 할인",
+        "롯데월드 어드벤처 부산: 종합이용권 35% 할인",
+        "캐리비안베이: 본인 40% 할인",
+        "에버랜드: 종일권 본인 40% 할인",
+        "할리스: 아메리카노 1잔 무료",
+        "요기요: 10% 할인 쿠폰 2매 + 5% 할인 쿠폰 1매",
+        "롯데렌터카 G car: 35% 할인권 2매",
+        "카모아: 해외 렌터카 10% 할인",
+        "LG생활건강샵 U+패밀리샵: 5,000원 할인",
+        "리디셀렉트: 1개월 무료",
+        "데이터 1GB 선물하기",
+        "쉐이크쉑: 5,000원 할인",
+        "딸기콩: 1개월 무료 이용권"
+      ],
+      "basicBenefitCategories": {
+        "문화/여가": [
+          "CGV",
+          "그라운드시소",
+          "페인터즈",
+          "씨네Q",
+          "U⁺모바일tv",
+          "IPTV",
+          "뮤지엄 원",
+          "케이팝머치",
+          "씨네폭스"
+        ],
+        "쇼핑": [
+          "GS THE FRESH",
+          "VYVY",
+          "롯데백화점몰",
+          "굿웨어몰",
+          "풀무원",
+          "닥터피엘",
+          "바잇미",
+          "오피스디포",
+          "마켓비",
+          "아워홈몰",
+          "하프클럽",
+          "보리보리",
+          "현대면세점",
+          "셀렉스",
+          "신라면세점(오프라인)",
+          "광동상회",
+          "키디키디",
+          "신라아이파크면세점(오프라인)",
+          "신라아이파크면세점(온라인)",
+          "롯데면세점(오프라인)",
+          "롯데면세점(온라인)",
+          "신라인터넷면세점",
+          "신세계면세점(온라인)",
+          "신세계면세점(오프라인)",
+          "전자랜드"
+        ],
+        "생활/편의": [
+          "GS25",
+          "펫생각",
+          "무브제",
+          "셀로",
+          "미니창고 다락",
+          "뮤직벨링",
+          "곤지암리조트",
+          "어바웃펫",
+          "가연결혼정보",
+          "포토블루",
+          "통인익스프레스",
+          "청소연구소",
+          "오토오아시스"
+        ],
+        "푸드": [
+          "파리바게뜨",
+          "뚜레쥬르",
+          "배스킨라빈스",
+          "VIPS",
+          "더플레이스",
+          "제일제면소",
+          "유가네닭갈비",
+          "라그릴리아",
+          "반올림피자",
+          "굽네치킨",
+          "컬리너리스퀘어",
+          "그리팅",
+          "오뚜기몰",
+          "삼산회관",
+          "미몽",
+          "스와로브스키",
+          "백미당",
+          "파리크라상",
+          "세빛섬",
+          "베베쿡",
+          "도미노피자",
+          "미스터피자",
+          "파파존스",
+          "피자헛",
+          "브레댄코",
+          "온더보더",
+          "푸드엠파이어",
+          "싱카이",
+          "키사라"
+        ],
+        "교육": [
+          "젠지글로벌아카데미",
+          "파고다어학원",
+          "파고다인강",
+          "파고다원",
+          "파고다토쿨",
+          "엘리하이",
+          "엘리하이 키즈",
+          "엠베스트",
+          "밀크T",
+          "월스트리트 잉글리쉬",
+          "DBR동아비즈니스리뷰",
+          "HBR하버드비즈니스리뷰",
+          "YBM NET",
+          "허그맘허그인",
+          "자란다",
+          "초심스터디카페"
+        ],
+        "여행/교통": [
+          "SK렌터카",
+          "티웨이항공",
+          "클룩",
+          "그래비티 조선 서울 판교",
+          "스피드메이트",
+          "롯데렌터카",
+          "투루카",
+          "트립닷컴",
+          "카모아"
+        ],
+        "APP/기기": [
+          "V컬러링 멤버십 프로모션",
+          "원스토어",
+          "지니뮤직"
+        ],
+        "엑티비티": [
+          "뽀로로파크",
+          "아쿠아필드",
+          "스파랜드",
+          "원더빌리지",
+          "원더파크",
+          "스카이라인 루지",
+          "QED",
+          "스몹",
+          "주렁주렁",
+          "클럽디 오아시스",
+          "씨라이프 코엑스 아쿠아리움",
+          "아쿠아플라넷",
+          "씨라이프 부산 아쿠아리움",
+          "캐리비안베이",
+          "서울랜드",
+          "롯데월드 아이스링크",
+          "LG트윈스 경기 티켓 할인",
+          "대관령 하늘목장",
+          "롯데월드 아쿠아리움",
+          "제주민속촌",
+          "이월드",
+          "서울스카이",
+          "대구아쿠아리움",
+          "뽀로로아쿠아빌리지",
+          "롯데월드 어드벤처 부산",
+          "한강유람선 이크루즈"
+        ],
+        "뷰티/건강": [
+          "비플레인",
+          "착한의사",
+          "비타브릿지",
+          "동아제약 디몰",
+          "LG생활건강샵 U+패밀리샵",
+          "필리",
+          "오가나셀 피부과의원 청담점",
+          "데이원클리닉",
+          "포쉬네일",
+          "유앤아이피부과의원"
+        ]
+      },
+      "basicBenefitRuleExamples": [
+        "GS25: 일 1회",
+        "파리바게뜨/뚜레쥬르: 일 1회",
+        "CGV: 월 1회",
+        "GS THE FRESH: 월 1회",
+        "배스킨라빈스: 월 1회",
+        "굽네치킨: 월 1회",
+        "아쿠아필드/스파랜드/주렁주렁: 월 1회",
+        "오토오아시스: 연 1회"
+      ],
+      "lgFamilyBenefits": [
+        "LG생활건강샵: 멤버십 할인 + 통신료 할인",
+        "LG트윈스: 정규시즌 잠실 홈경기 할인",
+        "곤지암리조트/화담숲: 객실 패키지, 패밀리 스파, 화담숲 할인"
+      ],
+      "localMembershipRules": [
+        "매장 결제 시 1,000원당 100원 할인",
+        "최대 2만원",
+        "지역 소상공인/로컬 제휴점 중심"
+      ],
+      "localMembershipCounts": {
+        "서울": 33,
+        "경기": 14,
+        "부산": 10,
+        "울산": 9,
+        "인천": 8,
+        "강원": 5,
+        "광주": 4,
+        "대구": 4
+      },
+      "localMembershipByRegion": {
+        "강원": [
+          "수플레",
+          "오가는정과",
+          "블란서 홍차",
+          "혜정닭갈비",
+          "처방전"
+        ],
+        "부산": [
+          "황금산곰장어",
+          "마산이모집",
+          "바다횟집",
+          "우섭스토리",
+          "고메빵집",
+          "마인츠과자점",
+          "아비앙또 다대점",
+          "아비앙또 장림점",
+          "쿠켄하임과자점",
+          "무스비소바"
+        ],
+        "울산": [
+          "언양불고기한마당한우촌",
+          "일품양평해장국 울산태화강점",
+          "팔도낙지촌",
+          "이조참숯갈비",
+          "할머니의손두부",
+          "소소원",
+          "강변수구레국밥",
+          "명정대숲갈비",
+          "수산물직판장태화점"
+        ],
+        "인천": [
+          "바른정육점",
+          "까레몽 계산점",
+          "다락",
+          "까레몽베이커리",
+          "토모루과자점",
+          "빵 굽는 곰",
+          "빵뜨락제과점",
+          "퐁듀베이커리(본점)"
+        ],
+        "광주": [
+          "아우르",
+          "건우축산",
+          "해담촌",
+          "프라임픽"
+        ],
+        "서울": [
+          "포레스트휴",
+          "까망",
+          "롱브르378",
+          "블리스라운드",
+          "나폴레옹제과 교대역점",
+          "H콜렉션",
+          "도성",
+          "로메이",
+          "카라블로썸",
+          "서촌금상고로케",
+          "망원동티라미수 본점",
+          "공병득쉐프",
+          "달콤이네",
+          "늘봄카페",
+          "하얀풍차",
+          "마망갸또 신사점",
+          "호밀호두",
+          "크롬베이커리",
+          "파티세리소나",
+          "밀파네",
+          "브레드디",
+          "마르메종과자점",
+          "보나세라 오가닉",
+          "에꼴드쉐프과자점(로겐하임점)",
+          "이든케이크",
+          "베어스덴베이커리",
+          "나폴레옹제과",
+          "뮬랭듀몽드",
+          "리치몬드과자점 성산본점",
+          "정성베이커리",
+          "멜로우모먼트",
+          "하베스트과자점",
+          "경리단578"
+        ],
+        "경기": [
+          "니드카페 안산점",
+          "라젯트 성인전문 음악학원",
+          "빵굽는마을",
+          "브레드퀸",
+          "궁뜰38발효차커피&족욕카페",
+          "궁뜰 맛있는 발효밥상",
+          "카페1330",
+          "르뱅브레드",
+          "빵굽는작은마을",
+          "파파블랑쉐",
+          "명장시대",
+          "송정환과자점 본점",
+          "몽뻬르베이커리카페",
+          "HK노엘제과점"
+        ],
+        "대구": [
+          "밥스딜라잇",
+          "삼덕동베이커리",
+          "까레몽",
+          "메종드샤베르"
+        ]
+      }
+    }
+  },
+  "recommendedInitialPresetKeys": [
+    "kt-vip-movie-ticket",
+    "kt-vvip-movie-ticket",
+    "kt-long-term-coupon",
+    "kt-lte-data-roulette",
+    "kt-family-box",
+    "skt-vip-pick-cgv",
+    "skt-vip-pick-t-universe",
+    "skt-bhc",
+    "skt-emart",
+    "skt-tday",
+    "lguplus-vipcok-cgv",
+    "lguplus-vipcok-naverplus",
+    "lguplus-vipcok-ydoc",
+    "lguplus-basic-gs25",
+    "lguplus-basic-cgv"
+  ],
+  "presets": [
+    {
+      "seedKey": "kt-vip-movie-ticket",
+      "name": "KT VIP 초이스 - 영화 예매",
+      "provider": "KT 멤버십",
+      "description": "VIP 초이스 영화 예매를 월 1회, 연 최대 6회까지 잊지 않고 관리하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "KT 멤버십",
+          "provider": "KT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "VIP 초이스 영화 예매",
+            "type": "benefit",
+            "quantity": 6,
+            "isUsed": false,
+            "description": "월 1회, 연 최대 6회. 사용한 달에는 같은 달 다른 VIP 초이스 사용 불가"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "kt",
+          "membershipGrade": "VIP",
+          "presetType": "trackable",
+          "programType": "vip_choice",
+          "benefitCategory": "movie",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "annual_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 6,
+          "eventWindowRule": "1월 1일~12월 31일 기준 연간 카운트",
+          "couponValidityRule": null,
+          "benefitAmountText": "2D 일반 영화 무료 예매",
+          "benefitConditionText": "같은 달 다른 VIP 초이스와 중복 사용 불가",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 KT VIP 초이스 영화 예매를 사용했는지 확인하세요."
+          },
+          "trackingPolicy": {
+            "sharedBucket": "kt-vip-choice-monthly",
+            "sharedBucketRule": "같은 달 다른 VIP 초이스와 중복 사용 불가"
+          },
+          "sourceUrls": [
+            "https://membership.kt.com/vip/choice/ChoiceInfo.do",
+            "https://membership.kt.com/vip/choice/VipListHtml.json"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "kt-vvip-movie-ticket",
+      "name": "KT VVIP 초이스 - 영화 예매",
+      "provider": "KT 멤버십",
+      "description": "VVIP 초이스 영화 예매를 월 1회, 연 최대 12회까지 관리하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "KT 멤버십",
+          "provider": "KT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "VVIP 초이스 영화 예매",
+            "type": "benefit",
+            "quantity": 12,
+            "isUsed": false,
+            "description": "월 1회, 연 최대 12회. 공개 웹 안내상 기본 6회 + 프로모션 6회 구조가 함께 표기됨"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "kt",
+          "membershipGrade": "VVIP",
+          "presetType": "trackable",
+          "programType": "vvip_choice",
+          "benefitCategory": "movie",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "annual_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 12,
+          "eventWindowRule": "1월 1일~12월 31일 기준 연간 카운트",
+          "couponValidityRule": null,
+          "benefitAmountText": "VVIP 영화 예매",
+          "benefitConditionText": "같은 달 다른 VVIP 초이스와 중복 사용 불가",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 KT VVIP 초이스 영화 예매를 사용했는지 확인하세요."
+          },
+          "trackingPolicy": {
+            "sharedBucket": "kt-vvip-choice-monthly",
+            "sharedBucketRule": "같은 달 다른 VVIP 초이스와 중복 사용 불가"
+          },
+          "sourceUrls": [
+            "https://membership.kt.com/vip/choice/VvipChoiceInfo.do",
+            "https://membership.kt.com/vip/choice/VvipChoiceListHtml.json"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "kt-long-term-coupon",
+      "name": "KT 장기고객 쿠폰",
+      "provider": "KT 멤버십",
+      "description": "가입 연수별 장기고객 쿠폰 수량과 1년 유효기간을 함께 관리하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "KT 멤버십",
+          "provider": "KT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "장기고객 선택형 쿠폰",
+            "type": "coupon",
+            "quantity": 10,
+            "validityPeriod": 365,
+            "isUsed": false,
+            "description": "가입 연수에 따라 연 6/8/10장. 쿠폰 발급 후 1년 유효"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "kt",
+          "membershipGrade": "장기고객",
+          "presetType": "trackable",
+          "programType": "long_term_customer",
+          "benefitCategory": "coupon_bundle",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "annual_counter",
+          "usageCycleUnit": "year",
+          "usageCycleLimit": null,
+          "annualLimitOptions": [
+            6,
+            8,
+            10
+          ],
+          "couponValidityRule": "쿠폰 발급 후 1년",
+          "benefitAmountText": "가입 연수별 선택형 쿠폰 묶음",
+          "benefitConditionText": "5년 이상 6장, 10년 이상 8장, 20년 이상 10장",
+          "exampleCoupons": [
+            "티빙 3,000원 할인",
+            "밀리의서재 3,000원 할인",
+            "데이터 2GB",
+            "통화 100분",
+            "지니TV VOD 3천원 할인"
+          ],
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "year",
+            "daysBefore": 30,
+            "message": "KT 장기고객 쿠폰 남은 수량과 만료일을 확인하세요."
+          },
+          "sourceUrls": [
+            "https://product.kt.com/benefit/membership/web/long_customer.html"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "kt-lte-data-roulette",
+      "name": "KT LTE 데이터 룰렛",
+      "provider": "KT 멤버십",
+      "description": "매월 말 응모 기간과 당첨 데이터 만료일을 함께 챙기기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "KT 멤버십",
+          "provider": "KT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "월간 LTE 데이터 룰렛 응모",
+            "type": "benefit",
+            "quantity": 1,
+            "isUsed": false,
+            "description": "매월 25일~말일 1회 응모 가능"
+          },
+          {
+            "name": "당첨 데이터 보관",
+            "type": "coupon",
+            "quantity": 1,
+            "isUsed": false,
+            "description": "당첨 데이터는 다음달 말일까지 사용 가능"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "kt",
+          "membershipGrade": "전체 멤버십",
+          "presetType": "trackable",
+          "programType": "data_roulette",
+          "benefitCategory": "data",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "coupon_expiry",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 12,
+          "eventWindowRule": "매월 25일~말일 응모",
+          "couponValidityRule": "당첨 데이터는 다음달 말일까지",
+          "benefitAmountText": "월 1회 응모형 데이터 혜택",
+          "benefitConditionText": "KT 멤버십 고객 대상",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 0,
+            "message": "KT LTE 데이터 룰렛 응모 기간이 시작됐는지 확인하세요."
+          },
+          "sourceUrls": [
+            "https://product.kt.com/benefit/membership/web/membership03.html"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "kt-family-box",
+      "name": "KT 패밀리박스",
+      "provider": "KT 멤버십",
+      "description": "패밀리박스의 월간 보너스 데이터, 미션 리워드, 데이터 보관 만료 규칙을 함께 추적하는 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "KT 멤버십",
+          "provider": "KT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "모바일 보너스 데이터",
+            "type": "benefit",
+            "quantity": 100,
+            "isUsed": false,
+            "description": "결합 가족 모바일 회선당 100MB"
+          },
+          {
+            "name": "인터넷 보너스 데이터",
+            "type": "benefit",
+            "quantity": 100,
+            "isUsed": false,
+            "description": "결합 내 인터넷 사용 시 모바일 회선당 100MB"
+          },
+          {
+            "name": "미션 리워드 데이터",
+            "type": "benefit",
+            "quantity": 2000,
+            "isUsed": false,
+            "description": "가족 그룹당 월 최대 2,000MB"
+          },
+          {
+            "name": "데이터 담기/꺼내기",
+            "type": "service",
+            "quantity": 30,
+            "isUsed": false,
+            "description": "회선당 월 30회"
+          },
+          {
+            "name": "가족폰 이어쓰기",
+            "type": "benefit",
+            "quantity": 2000,
+            "isUsed": false,
+            "description": "월 2,000MB, 최대 12개월"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "kt",
+          "membershipGrade": "패밀리박스 이용 가구",
+          "presetType": "trackable",
+          "programType": "family_box",
+          "benefitCategory": "data_share",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "monthly_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "couponValidityRule": "담은 데이터는 담기 완료 시점 기준 다음달 말일까지, 꺼낸 데이터는 꺼내기 시점 기준 당월 말일까지",
+          "benefitAmountText": "월간 데이터 보너스와 공유 혜택",
+          "benefitConditionText": "가족 그룹 구성, 회선 수, 결합 여부에 따라 실제 수량이 달라질 수 있음",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "KT 패밀리박스 보너스 데이터와 리워드를 이번 달에 챙겼는지 확인하세요."
+          },
+          "sourceUrls": [
+            "https://product.kt.com/benefit/membership/web/membership06.html",
+            "https://product.kt.com/benefit/membership/web/membership09.html"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "skt-vip-pick-cgv",
+      "name": "SKT VIP PICK - CGV",
+      "provider": "T 멤버십",
+      "description": "VIP PICK CGV 무료 예매와 1+1 예매 횟수를 함께 관리하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "T 멤버십",
+          "provider": "SKT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "CGV 무료 관람권",
+            "type": "benefit",
+            "quantity": 3,
+            "isUsed": false,
+            "description": "연 3회 무료 관람"
+          },
+          {
+            "name": "CGV 1+1 예매",
+            "type": "benefit",
+            "quantity": 9,
+            "isUsed": false,
+            "description": "연 9회 1+1 예매"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "skt",
+          "membershipGrade": "VIP",
+          "presetType": "trackable",
+          "programType": "vip_pick",
+          "benefitCategory": "movie",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "annual_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 12,
+          "eventWindowRule": "매월 1회 PICK, 연 12회",
+          "couponValidityRule": null,
+          "benefitAmountText": "무료 3회 + 1+1 9회",
+          "benefitConditionText": "VIP PICK은 같은 달 1회만 선택 가능",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 SKT VIP PICK CGV를 사용했는지 확인하세요."
+          },
+          "trackingPolicy": {
+            "sharedBucket": "skt-vip-pick-monthly",
+            "segments": [
+              {
+                "name": "freeTicket",
+                "limit": 3
+              },
+              {
+                "name": "onePlusOne",
+                "limit": 9
+              }
+            ]
+          },
+          "sourceUrls": [
+            "https://sktmembership.tworld.co.kr/mps/pc-bff/program/vippick.do"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "skt-vip-pick-t-universe",
+      "name": "SKT VIP PICK - T 우주패스",
+      "provider": "T 멤버십",
+      "description": "T 우주패스 9,900원/4,900원 쿠폰의 연간 횟수와 다운로드 후 만료 시점을 함께 관리하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "T 멤버십",
+          "provider": "SKT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "T 우주패스 9,900원 할인 쿠폰",
+            "type": "coupon",
+            "quantity": 3,
+            "isUsed": false,
+            "description": "연 3회, 다운로드 후 다음달 말일까지"
+          },
+          {
+            "name": "T 우주패스 4,900원 할인 쿠폰",
+            "type": "coupon",
+            "quantity": 9,
+            "isUsed": false,
+            "description": "연 9회, 다운로드 후 다음달 말일까지"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "skt",
+          "membershipGrade": "VIP",
+          "presetType": "trackable",
+          "programType": "vip_pick",
+          "benefitCategory": "subscription",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "coupon_expiry",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 12,
+          "couponValidityRule": "다운로드 후 다음달 말일까지",
+          "benefitAmountText": "9,900원 쿠폰 3회 + 4,900원 쿠폰 9회",
+          "benefitConditionText": "VIP PICK은 같은 달 1회만 선택 가능",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 SKT VIP PICK T 우주패스를 다운로드했는지 확인하세요."
+          },
+          "trackingPolicy": {
+            "sharedBucket": "skt-vip-pick-monthly",
+            "segments": [
+              {
+                "name": "coupon9900",
+                "limit": 3
+              },
+              {
+                "name": "coupon4900",
+                "limit": 9
+              }
+            ]
+          },
+          "sourceUrls": [
+            "https://sktmembership.tworld.co.kr/mps/pc-bff/program/vippick.do"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "skt-bhc",
+      "name": "SKT 제휴 혜택 - bhc",
+      "provider": "T 멤버십",
+      "description": "bhc 할인 혜택을 월 2회까지 챙길 수 있게 도와주는 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "T 멤버십",
+          "provider": "SKT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "bhc 할인",
+            "type": "benefit",
+            "quantity": 2,
+            "isUsed": false,
+            "description": "월 2회 사용 가능"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "skt",
+          "membershipGrade": "등급별 확인 필요",
+          "presetType": "trackable",
+          "programType": "partner_discount",
+          "benefitCategory": "food",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "monthly_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 2,
+          "benefitAmountText": "bhc 제휴 할인",
+          "benefitConditionText": "세부 할인 조건은 월별 프로모션 및 등급에 따라 달라질 수 있음",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 SKT bhc 할인 2회를 모두 사용했는지 확인하세요."
+          },
+          "sourceUrls": [
+            "https://sktmembership.tworld.co.kr/mps/pc-bff/sktmembership/main.do",
+            "https://sktmembership.tworld.co.kr/mps/pc-bff/benefitbrand/list-tab1.do"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "skt-emart",
+      "name": "SKT 제휴 혜택 - 이마트",
+      "provider": "T 멤버십",
+      "description": "짝수월 7%, 홀수월 3% 할인과 연간 한도 관리를 위한 이마트 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "T 멤버십",
+          "provider": "SKT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "이마트 구매 혜택",
+            "type": "benefit",
+            "quantity": 12,
+            "isUsed": false,
+            "description": "VIP 기준 짝수월 7%, 홀수월 3%, 연간 한도 존재"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "skt",
+          "membershipGrade": "VIP",
+          "presetType": "trackable",
+          "programType": "partner_discount",
+          "benefitCategory": "mart",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "annual_cap_with_monthly_rule",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": null,
+          "benefitAmountText": "짝수월 7%, 홀수월 3% 할인",
+          "benefitConditionText": "연간 한도 존재, 실제 한도 금액은 등급과 안내 페이지 확인 필요",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 SKT 이마트 혜택을 사용했는지 확인하세요."
+          },
+          "sourceUrls": [
+            "https://sktmembership.tworld.co.kr/mps/pc-bff/sktmembership/main.do",
+            "https://sktmembership.tworld.co.kr/mps/pc-bff/benefitbrand/list-tab1.do"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "skt-tday",
+      "name": "SKT T day",
+      "provider": "T 멤버십",
+      "description": "매달 첫째 주 수요일 중심의 T day 이벤트 윈도우를 놓치지 않기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "T 멤버십",
+          "provider": "SKT",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "월간 T day 참여",
+            "type": "benefit",
+            "quantity": 1,
+            "isUsed": false,
+            "description": "매달 첫째 주, 수요일 중심 이벤트 기간 내 총 1회"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "skt",
+          "membershipGrade": "전체 멤버십",
+          "presetType": "trackable",
+          "programType": "t_day",
+          "benefitCategory": "event_window",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "event_window",
+          "usageCycleUnit": "event_window",
+          "usageCycleLimit": 1,
+          "eventWindowRule": "매달 첫째 주, 수요일 중심 이벤트 기간 내 총 1회",
+          "benefitAmountText": "월간 T day 참여권",
+          "benefitConditionText": "월별 브랜드와 할인 조건은 달라질 수 있음",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 0,
+            "message": "이번 달 T day 이벤트 주간이 시작됐는지 확인하세요."
+          },
+          "sourceUrls": [
+            "https://sktmembership.tworld.co.kr/mps/pc-bff/program/tday.do"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "lguplus-vipcok-cgv",
+      "name": "LG U+ VIP콕 - CGV",
+      "provider": "U+ 멤버십",
+      "description": "VIP콕 CGV 무료 예매와 1+1 예매를 월 1회, 연 12회 기준으로 관리하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "U+ 멤버십",
+          "provider": "LG U+",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "CGV 무료 예매",
+            "type": "benefit",
+            "quantity": 3,
+            "isUsed": false,
+            "description": "연 3회 무료 예매"
+          },
+          {
+            "name": "CGV 1+1 예매",
+            "type": "benefit",
+            "quantity": 9,
+            "isUsed": false,
+            "description": "연 9회 1+1 예매"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "lguplus",
+          "membershipGrade": "VVIP/VIP",
+          "presetType": "trackable",
+          "programType": "vip_cok",
+          "benefitCategory": "movie",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "annual_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 12,
+          "eventWindowRule": "VIP콕 내 제휴사 통합 월 1회",
+          "benefitAmountText": "무료 3회 + 1+1 9회",
+          "benefitConditionText": "VIP콕은 월 1회 통합 사용 규칙 적용",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 LG U+ VIP콕 CGV를 사용했는지 확인하세요."
+          },
+          "trackingPolicy": {
+            "sharedBucket": "lguplus-vip-cok-monthly",
+            "segments": [
+              {
+                "name": "freeTicket",
+                "limit": 3
+              },
+              {
+                "name": "onePlusOne",
+                "limit": 9
+              }
+            ]
+          },
+          "sourceUrls": [
+            "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=01&urcMbspBnftDivsCd=01"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "lguplus-vipcok-naverplus",
+      "name": "LG U+ VIP콕 - 네이버플러스 멤버십",
+      "provider": "U+ 멤버십",
+      "description": "네이버플러스 멤버십 1개월 무료 이용권을 월 단위로 체크하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "U+ 멤버십",
+          "provider": "LG U+",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "네이버플러스 멤버십 1개월 이용권",
+            "type": "service",
+            "quantity": 12,
+            "isUsed": false,
+            "description": "월 1회, 연 12회"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "lguplus",
+          "membershipGrade": "VVIP/VIP",
+          "presetType": "trackable",
+          "programType": "vip_cok",
+          "benefitCategory": "subscription",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "annual_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 12,
+          "eventWindowRule": "VIP콕 내 제휴사 통합 월 1회",
+          "benefitAmountText": "네이버플러스 멤버십 1개월 무료",
+          "benefitConditionText": "VIP콕은 월 1회 통합 사용 규칙 적용",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 LG U+ VIP콕 네이버플러스 멤버십을 등록했는지 확인하세요."
+          },
+          "trackingPolicy": {
+            "sharedBucket": "lguplus-vip-cok-monthly"
+          },
+          "sourceUrls": [
+            "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=01&urcMbspBnftDivsCd=01"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "lguplus-vipcok-ydoc",
+      "name": "LG U+ VIP콕 - 유독 4천원 할인",
+      "provider": "U+ 멤버십",
+      "description": "유독 4천원 할인 혜택을 월 1회, 연 12회 기준으로 추적하는 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "U+ 멤버십",
+          "provider": "LG U+",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "유독 4천원 할인",
+            "type": "coupon",
+            "quantity": 12,
+            "isUsed": false,
+            "description": "월 1회, 연 12회"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "lguplus",
+          "membershipGrade": "VVIP/VIP",
+          "presetType": "trackable",
+          "programType": "vip_cok",
+          "benefitCategory": "subscription",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "annual_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "annualLimit": 12,
+          "eventWindowRule": "VIP콕 내 제휴사 통합 월 1회",
+          "benefitAmountText": "유독 4,000원 할인",
+          "benefitConditionText": "VIP콕은 월 1회 통합 사용 규칙 적용",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 LG U+ VIP콕 유독 4천원 할인 혜택을 신청했는지 확인하세요."
+          },
+          "trackingPolicy": {
+            "sharedBucket": "lguplus-vip-cok-monthly"
+          },
+          "sourceUrls": [
+            "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=01&urcMbspBnftDivsCd=01"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "lguplus-basic-gs25",
+      "name": "LG U+ 기본 혜택 - GS25",
+      "provider": "U+ 멤버십",
+      "description": "GS25 기본 혜택을 일 1회 기준으로 체크하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "U+ 멤버십",
+          "provider": "LG U+",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "GS25 기본 혜택",
+            "type": "benefit",
+            "quantity": 1,
+            "isUsed": false,
+            "description": "일 1회"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "lguplus",
+          "membershipGrade": "전체 멤버십",
+          "presetType": "trackable",
+          "programType": "basic_benefit",
+          "benefitCategory": "convenience_store",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "daily_counter",
+          "usageCycleUnit": "day",
+          "usageCycleLimit": 1,
+          "benefitAmountText": "GS25 기본 혜택",
+          "benefitConditionText": "세부 할인 조건은 멤버십 안내 페이지 확인 필요",
+          "reminder": {
+            "type": "benefit",
+            "enabled": false,
+            "repeatUnit": "day",
+            "daysBefore": 0,
+            "message": "오늘 LG U+ GS25 기본 혜택을 사용했는지 확인하세요."
+          },
+          "sourceUrls": [
+            "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=02"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    },
+    {
+      "seedKey": "lguplus-basic-cgv",
+      "name": "LG U+ 기본 혜택 - CGV",
+      "provider": "U+ 멤버십",
+      "description": "CGV 기본 혜택을 월 1회 기준으로 관리하기 위한 프리셋",
+      "isOfficial": true,
+      "createdBy": "admin",
+      "likes": 0,
+      "downloads": 0,
+      "template": {
+        "subscription": {
+          "name": "U+ 멤버십",
+          "provider": "LG U+",
+          "isActive": true,
+          "subProducts": []
+        },
+        "subProducts": [
+          {
+            "name": "CGV 기본 혜택",
+            "type": "benefit",
+            "quantity": 1,
+            "isUsed": false,
+            "description": "월 1회"
+          }
+        ],
+        "seedMeta": {
+          "carrier": "lguplus",
+          "membershipGrade": "전체 멤버십",
+          "presetType": "trackable",
+          "programType": "basic_benefit",
+          "benefitCategory": "movie",
+          "photos": [],
+          "defaultEnabled": true,
+          "displayWhenOff": true,
+          "offStateBehavior": "목록에는 남기고 알림만 중지",
+          "usageManualCheckable": true,
+          "remainingCountModel": "monthly_counter",
+          "usageCycleUnit": "month",
+          "usageCycleLimit": 1,
+          "benefitAmountText": "CGV 기본 혜택",
+          "benefitConditionText": "세부 할인 조건은 멤버십 안내 페이지 확인 필요",
+          "reminder": {
+            "type": "benefit",
+            "enabled": true,
+            "repeatUnit": "month",
+            "daysBefore": 1,
+            "message": "이번 달 LG U+ CGV 기본 혜택을 사용했는지 확인하세요."
+          },
+          "sourceUrls": [
+            "https://www.lguplus.com/uhdc/fo/prdv/mebfjnco/v1/jnco?urcMbspDivsCd=02"
+          ],
+          "sourceCheckedAt": "2026-03-18"
+        }
+      }
+    }
+  ]
+}

@@ -1,3 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --surface-0: #f5ecdd;
+  --surface-1: #fff8ef;
+  --surface-2: #ffffff;
+  --ink-strong: #14213d;
+  --ink-soft: #4c5c68;
+  --brand-coral: #e26f51;
+  --brand-teal: #2a9d8f;
+  --line-soft: rgba(20, 33, 61, 0.08);
+}
+
+html {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(42, 157, 143, 0.12), transparent 32%),
+    radial-gradient(circle at top right, rgba(226, 111, 81, 0.14), transparent 28%),
+    linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%);
+}
+
+body {
+  min-height: 100vh;
+  color: var(--ink-strong);
+  font-family:
+    "Avenir Next",
+    "SUIT Variable",
+    "Pretendard Variable",
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    sans-serif;
+  background: transparent;
+}
+
+::selection {
+  background: rgba(226, 111, 81, 0.18);
+  color: var(--ink-strong);
+}
