@@ -1,5 +1,6 @@
 [build]
   base = "web"
+  ignore = "if [ \"$SITE_NAME\" != \"subscriman\" ]; then echo \"Skipping build for non-primary Netlify site: $SITE_NAME\"; exit 0; fi; exit 1"
   command = "npm run build"
   publish = ".next"
 
