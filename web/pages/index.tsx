@@ -13,10 +13,10 @@ export default function HomePage({ seedData }: HomePageProps) {
   return (
     <>
       <Head>
-        <title>Subscriman | 통신사 혜택 설정</title>
+        <title>Subscriman | 구독과 혜택 관리</title>
         <meta
           name="description"
-          content="통신사 멤버십 혜택을 선택하고 개인 설정값으로 저장하는 웹 샘플"
+          content="통신사 멤버십 혜택과 구독 상품을 선택하고 개인 설정, 사용 체크, 결제 정보를 저장하는 웹 샘플"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
