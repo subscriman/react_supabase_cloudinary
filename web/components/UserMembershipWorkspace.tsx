@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import SubscriptionDesktopEditor from './SubscriptionDesktopEditor';
 import SubscriptionMobileEditor from './SubscriptionMobileEditor';
 import {
   BenefitTrackerState,
@@ -961,26 +962,60 @@ export default function UserMembershipWorkspace({
                 </section>
 
                 {draft.catalogKind === 'subscription' ? (
-                  <SubscriptionMobileEditor
-                    draft={draft}
-                    selectedPreset={selectedPreset}
-                    carrierLabel={carrierLabels[draft.carrier]}
-                    productTypeLabel={productTypeLabels[draft.productType]}
-                    statusMessage={statusMessage}
-                    paymentCycleLabels={paymentCycleLabels}
-                    paymentMethodLabels={paymentMethodLabels}
-                    onUpdateDraft={updateDraft}
-                    onUpdateReminder={updateReminder}
-                    onUpdateUsageEntry={updateUsageEntry}
-                    onRemoveUsageHistoryEntry={removeUsageHistoryEntry}
-                    onAddTrackerCheckboxEntry={addTrackerCheckboxEntry}
-                    onRemoveTrackerEntry={removeTrackerEntry}
-                    onUpdatePhoto={updatePhoto}
-                    onAddPhotoField={addPhotoField}
-                    onRemovePhotoField={removePhotoField}
-                    onResetDraft={handleResetDraft}
-                    onSaveDraft={handleSaveDraft}
-                  />
+                  <>
+                    <div className="lg:hidden">
+                      <SubscriptionMobileEditor
+                        draft={draft}
+                        selectedPreset={selectedPreset}
+                        carrierLabel={carrierLabels[draft.carrier]}
+                        productTypeLabel={productTypeLabels[draft.productType]}
+                        statusMessage={statusMessage}
+                        paymentCycleLabels={paymentCycleLabels}
+                        paymentMethodLabels={paymentMethodLabels}
+                        onUpdateDraft={updateDraft}
+                        onUpdateReminder={updateReminder}
+                        onUpdateUsageEntry={updateUsageEntry}
+                        onRemoveUsageHistoryEntry={removeUsageHistoryEntry}
+                        onAddTrackerCheckboxEntry={addTrackerCheckboxEntry}
+                        onRemoveTrackerEntry={removeTrackerEntry}
+                        onUpdatePhoto={updatePhoto}
+                        onAddPhotoField={addPhotoField}
+                        onRemovePhotoField={removePhotoField}
+                        onResetDraft={handleResetDraft}
+                        onSaveDraft={handleSaveDraft}
+                      />
+                    </div>
+
+                    <SubscriptionDesktopEditor
+                      draft={draft}
+                      statusMessage={statusMessage}
+                      paymentCycleLabels={paymentCycleLabels}
+                      paymentMethodLabels={paymentMethodLabels}
+                      trackerAmountInputs={trackerAmountInputs}
+                      onUpdateDraft={updateDraft}
+                      onUpdateUsageEntry={updateUsageEntry}
+                      onRemoveUsageHistoryEntry={removeUsageHistoryEntry}
+                      onUpdatePhoto={updatePhoto}
+                      onAddPhotoField={addPhotoField}
+                      onRemovePhotoField={removePhotoField}
+                      onUpdateSubProduct={updateSubProduct}
+                      onUpdateTrackerNote={updateTrackerNote}
+                      onUpdateTrackerPhoto={updateTrackerPhoto}
+                      onAddTrackerPhotoField={addTrackerPhotoField}
+                      onRemoveTrackerPhotoField={removeTrackerPhotoField}
+                      onAddTrackerCheckboxEntry={addTrackerCheckboxEntry}
+                      onAddTrackerAmountEntry={addTrackerAmountEntry}
+                      onRemoveTrackerEntry={removeTrackerEntry}
+                      onSetTrackerAmountInput={(trackerId, value) =>
+                        setTrackerAmountInputs((prev) => ({
+                          ...prev,
+                          [trackerId]: value,
+                        }))
+                      }
+                      onResetDraft={handleResetDraft}
+                      onSaveDraft={handleSaveDraft}
+                    />
+                  </>
                 ) : (
                   <>
                 <section className={sectionCardClassName}>
