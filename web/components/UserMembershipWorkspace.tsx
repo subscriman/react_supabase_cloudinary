@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import SubscriptionMobileEditor from './SubscriptionMobileEditor';
 import {
   BenefitTrackerState,
   Carrier,
@@ -931,7 +932,7 @@ export default function UserMembershipWorkspace({
                     </div>
                   </div>
 
-                  {statusMessage ? (
+                  {statusMessage && draft.catalogKind !== 'subscription' ? (
                     <div className="mt-5 rounded-2xl bg-[rgba(42,157,143,0.10)] px-4 py-3 text-sm text-slate-700">
                       {statusMessage}
                     </div>
@@ -959,6 +960,29 @@ export default function UserMembershipWorkspace({
                   </div>
                 </section>
 
+                {draft.catalogKind === 'subscription' ? (
+                  <SubscriptionMobileEditor
+                    draft={draft}
+                    selectedPreset={selectedPreset}
+                    carrierLabel={carrierLabels[draft.carrier]}
+                    productTypeLabel={productTypeLabels[draft.productType]}
+                    statusMessage={statusMessage}
+                    paymentCycleLabels={paymentCycleLabels}
+                    paymentMethodLabels={paymentMethodLabels}
+                    onUpdateDraft={updateDraft}
+                    onUpdateReminder={updateReminder}
+                    onUpdateUsageEntry={updateUsageEntry}
+                    onRemoveUsageHistoryEntry={removeUsageHistoryEntry}
+                    onAddTrackerCheckboxEntry={addTrackerCheckboxEntry}
+                    onRemoveTrackerEntry={removeTrackerEntry}
+                    onUpdatePhoto={updatePhoto}
+                    onAddPhotoField={addPhotoField}
+                    onRemovePhotoField={removePhotoField}
+                    onResetDraft={handleResetDraft}
+                    onSaveDraft={handleSaveDraft}
+                  />
+                ) : (
+                  <>
                 <section className={sectionCardClassName}>
                   <div className="grid gap-5 lg:grid-cols-2">
                     <div>
@@ -1926,6 +1950,8 @@ export default function UserMembershipWorkspace({
                     </div>
                   </div>
                 </section>
+                  </>
+                )}
               </>
             ) : (
               <section className={sectionCardClassName}>

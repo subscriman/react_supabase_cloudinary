@@ -10,6 +10,7 @@ export type ReminderRepeatUnit =
 export type PaymentCycle = 'monthly' | 'yearly';
 export type PaymentMethodType = 'card' | 'account';
 export type UsageEntryMode = 'checkbox' | 'amount';
+export type BenefitTrackerDisplayMode = 'check' | 'info';
 
 export interface SeedSubProduct {
   name: string;
@@ -41,6 +42,8 @@ export interface BenefitTrackerSeed {
   sharedBudgetKey?: string | null;
   notePlaceholder?: string;
   photos?: string[];
+  displayMode?: BenefitTrackerDisplayMode;
+  groupTitle?: string;
 }
 
 export interface SeedMeta {
@@ -137,6 +140,7 @@ export interface UserMembershipConfig {
   productType: ProductType;
   displayName: string;
   description: string;
+  userMemo: string;
   photos: string[];
   isActive: boolean;
   reminder: {
@@ -163,6 +167,7 @@ export interface UserMembershipConfig {
   selectedTier: string;
   price: number | null;
   billingCycle: PaymentCycle;
+  startedAt: string;
   paymentDate: string;
   renewalDate: string;
   paymentMethodType: PaymentMethodType;
@@ -211,6 +216,7 @@ export function createDraftFromSeedPreset(preset: SeedPreset): UserMembershipCon
     productType: meta.productType || 'telecom',
     displayName: preset.name,
     description: preset.description,
+    userMemo: '',
     photos: normalizePhotos(meta.photos || []),
     isActive: meta.defaultEnabled ?? true,
     reminder: {
@@ -237,6 +243,7 @@ export function createDraftFromSeedPreset(preset: SeedPreset): UserMembershipCon
     selectedTier: meta.defaultTier || meta.tierSuggestions?.[0] || '',
     price: meta.defaultPrice ?? null,
     billingCycle: meta.defaultBillingCycle || 'monthly',
+    startedAt: '',
     paymentDate: '',
     renewalDate: '',
     paymentMethodType: meta.defaultPaymentMethodType || 'card',
@@ -286,6 +293,7 @@ export function cloneBenefitTrackers(
 ): BenefitTrackerState[] {
   return trackers.map((tracker) => ({
     ...tracker,
+    displayMode: tracker.displayMode || 'check',
     photos: normalizePhotos(tracker.photos || []),
     note: '',
     entries: [],
@@ -340,6 +348,7 @@ function normalizeSavedConfig(config: UserMembershipConfig): UserMembershipConfi
     carrier: config.carrier || 'general',
     catalogKind: config.catalogKind || 'telecom',
     productType: config.productType || 'telecom',
+    userMemo: config.userMemo || '',
     photos: normalizePhotos(config.photos || []),
     sourceUrls: config.sourceUrls || [],
     sourceCheckedAt: config.sourceCheckedAt || '',
@@ -348,6 +357,7 @@ function normalizeSavedConfig(config: UserMembershipConfig): UserMembershipConfi
     selectedTier: config.selectedTier || '',
     price: config.price ?? null,
     billingCycle: config.billingCycle || 'monthly',
+    startedAt: config.startedAt || '',
     paymentDate: config.paymentDate || '',
     renewalDate: config.renewalDate || '',
     paymentMethodType: config.paymentMethodType || 'card',
@@ -360,6 +370,7 @@ function normalizeSavedConfig(config: UserMembershipConfig): UserMembershipConfi
     benefitTrackers: Array.isArray(config.benefitTrackers)
       ? config.benefitTrackers.map((tracker) => ({
           ...tracker,
+          displayMode: tracker.displayMode || 'check',
           photos: normalizePhotos(tracker.photos || []),
           entries: Array.isArray(tracker.entries) ? tracker.entries : [],
           note: tracker.note || '',
@@ -407,6 +418,7 @@ function migrateLegacyConfig(value: unknown): UserMembershipConfig | null {
     productType: 'telecom',
     displayName: legacy.displayName || '이전 저장 상품',
     description: legacy.description || '',
+    userMemo: '',
     photos: normalizePhotos(legacy.photos || []),
     isActive: legacy.isActive ?? true,
     reminder: {
@@ -434,6 +446,7 @@ function migrateLegacyConfig(value: unknown): UserMembershipConfig | null {
     selectedTier: '',
     price: null,
     billingCycle: 'monthly',
+    startedAt: '',
     paymentDate: '',
     renewalDate: '',
     paymentMethodType: 'card',
@@ -559,9 +572,9 @@ function buildSampleProductPresets(): SeedPreset[] {
   const typeCPreset = createSamplePreset({
     seedKey: 'sample-t-universe-life-type-c',
     name: 'T 우주패스 life',
-    provider: 'T 우주패스',
+    provider: 'SKT',
     description:
-      '기본 결제 정보와 제휴 브랜드별 체크/금액 기록을 함께 관리하는 타입 C 샘플',
+      '올리브영 3종 쿠폰팩은 체크형으로, 스타벅스와 이마트24는 정보 카드로 함께 관리하는 타입 C 샘플',
     carrier: 'skt',
     productType: 'C',
     supportsBilling: true,
@@ -575,71 +588,63 @@ function buildSampleProductPresets(): SeedPreset[] {
     sourceCheckedAt: '2026-03-19',
     benefitTrackers: [
       {
-        id: 'seven-eleven',
-        title: '세븐일레븐 30% 할인',
-        description: '일 1회, 투썸플레이스와 합산해 월 3만 원 한도',
+        id: 'olive-young-gift',
+        title: '4천 원 모바일 상품권',
+        description: '올리브영 3종 쿠폰팩의 개별 사용 체크 항목',
+        cycleUnit: 'month',
+        cycleLimit: 1,
+        entryMode: 'checkbox',
+        displayMode: 'check',
+        groupTitle: '올리브영 3종 쿠폰팩',
+        overflowMessage:
+          '올리브영 3종 쿠폰팩은 월 1회 제공 혜택입니다. 그래도 기록하시겠습니까?',
+      },
+      {
+        id: 'olive-young-discount',
+        title: '3천 원 할인 쿠폰',
+        description: '올리브영 3종 쿠폰팩의 개별 사용 체크 항목',
+        cycleUnit: 'month',
+        cycleLimit: 1,
+        entryMode: 'checkbox',
+        displayMode: 'check',
+        groupTitle: '올리브영 3종 쿠폰팩',
+        overflowMessage:
+          '올리브영 3종 쿠폰팩은 월 1회 제공 혜택입니다. 그래도 기록하시겠습니까?',
+      },
+      {
+        id: 'olive-young-delivery',
+        title: '무료 배송 쿠폰',
+        description: '올리브영 3종 쿠폰팩의 개별 사용 체크 항목',
+        cycleUnit: 'month',
+        cycleLimit: 1,
+        entryMode: 'checkbox',
+        displayMode: 'check',
+        groupTitle: '올리브영 3종 쿠폰팩',
+        overflowMessage:
+          '올리브영 3종 쿠폰팩은 월 1회 제공 혜택입니다. 그래도 기록하시겠습니까?',
+      },
+      {
+        id: 'starbucks-info',
+        title: '스타벅스 할인',
+        description: '스타벅스 제조 음료 20% 할인 (월 최대 3만 원)',
+        cycleUnit: 'month',
+        entryMode: 'checkbox',
+        displayMode: 'info',
+      },
+      {
+        id: 'emart24-info',
+        title: '이마트24 할인',
+        description:
+          '구매 금액 1천 원당 200원 할인 (일 1회 최대 4천 원, 월 최대 2만 원 할인)',
         cycleUnit: 'day',
-        cycleLimit: 1,
-        entryMode: 'amount',
-        cycleAmountLimit: 30000,
-        sharedBudgetKey: 't-universe-life-cafe-budget',
-        overflowMessage:
-          '세븐일레븐 혜택은 일 1회 제한입니다. 그래도 기록하시겠습니까?',
-        notePlaceholder: '예: 오늘 할인 적용한 영수증 메모',
-      },
-      {
-        id: 'a-twosome-place',
-        title: '투썸플레이스 30% 할인',
-        description: '일 1회, 세븐일레븐과 합산해 월 3만 원 한도',
-        cycleUnit: 'day',
-        cycleLimit: 1,
-        entryMode: 'amount',
-        cycleAmountLimit: 30000,
-        sharedBudgetKey: 't-universe-life-cafe-budget',
-        overflowMessage:
-          '투썸플레이스 혜택은 일 1회 제한입니다. 그래도 기록하시겠습니까?',
-        notePlaceholder: '예: 지난달 누락분 소급 체크',
-      },
-      {
-        id: 'starbucks',
-        title: '스타벅스 카페라떼 Tall 1잔 무료',
-        description: '월 1회 사용 여부 체크',
-        cycleUnit: 'month',
-        cycleLimit: 1,
         entryMode: 'checkbox',
-        overflowMessage:
-          '스타벅스 혜택은 월 1회 제공 혜택입니다. 그래도 기록하시겠습니까?',
-        notePlaceholder: '예: 바코드 캡처 위치 메모',
-      },
-      {
-        id: 'olive-young',
-        title: '올리브영 기프트카드 1만 원권',
-        description: '월 1회 번호 등록 및 사용 완료 체크',
-        cycleUnit: 'month',
-        cycleLimit: 1,
-        entryMode: 'checkbox',
-        overflowMessage:
-          '올리브영 혜택은 월 1회 제공 혜택입니다. 그래도 기록하시겠습니까?',
-        notePlaceholder: '예: 카드 번호 또는 등록 메모',
-      },
-      {
-        id: 'emart24',
-        title: '이마트24 3,000원권 2매',
-        description: '월 2회 각각의 쿠폰 사용 여부 체크',
-        cycleUnit: 'month',
-        cycleLimit: 2,
-        entryMode: 'checkbox',
-        overflowMessage:
-          '이마트24 혜택은 월 2회 제공 혜택입니다. 그래도 기록하시겠습니까?',
-        notePlaceholder: '예: 쿠폰 1장은 삼각김밥 결제에 사용',
+        displayMode: 'info',
       },
     ],
     subProducts: [
-      { name: '세븐일레븐 30% 할인', type: 'benefit', description: '일 1회 / 월 3만 원 한도 공유' },
-      { name: '투썸플레이스 30% 할인', type: 'benefit', description: '일 1회 / 월 3만 원 한도 공유' },
-      { name: '스타벅스 무료 쿠폰', type: 'coupon', description: '월 1회' },
-      { name: '올리브영 1만 원권', type: 'coupon', description: '월 1회' },
-      { name: '이마트24 3,000원권 2매', type: 'coupon', description: '월 2회' },
+      { name: '올리브영 3종 쿠폰팩', type: 'coupon', description: '4천 원 모바일 상품권 / 3천 원 할인 쿠폰 / 무료 배송 쿠폰' },
+      { name: '스타벅스 할인', type: 'benefit', description: '제조 음료 20% 할인 / 월 최대 3만 원' },
+      { name: '이마트24 할인', type: 'benefit', description: '1천 원당 200원 할인 / 일 1회 최대 4천 원 / 월 최대 2만 원' },
     ],
   });
 
