@@ -41,6 +41,19 @@ CREATE TABLE sub_products (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 모바일 카테고리 테이블
+CREATE TABLE mobile_categories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  category_key VARCHAR(80) UNIQUE NOT NULL,
+  label VARCHAR(100) NOT NULL,
+  short_label VARCHAR(40) NOT NULL,
+  description TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 파트너사 테이블
 CREATE TABLE partners (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -139,6 +152,7 @@ CREATE INDEX idx_preset_likes_user_id ON preset_likes(user_id);
 CREATE INDEX idx_preset_likes_preset_id ON preset_likes(preset_id);
 CREATE INDEX idx_subscription_presets_partner_id ON subscription_presets(partner_id);
 CREATE INDEX idx_partners_is_active ON partners(is_active);
+CREATE INDEX idx_mobile_categories_active_sort ON mobile_categories(is_active, sort_order);
 
 -- RLS (Row Level Security) 정책
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

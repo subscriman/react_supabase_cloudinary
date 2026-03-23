@@ -1,7 +1,7 @@
 export type Carrier = 'kt' | 'skt' | 'lguplus' | 'general';
 export type ProductType = 'A' | 'B' | 'C' | 'D' | 'telecom';
 export type CatalogKind = 'subscription' | 'telecom';
-export type MobileCatalogCategory = 'ott' | 'delivery' | 'telecom' | 't-universe';
+export type MobileCatalogCategory = string;
 export type ReminderRepeatUnit =
   | 'day'
   | 'week'

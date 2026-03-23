@@ -1,5 +1,11 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import {
+  MobileCategoryOption,
+  getFallbackMobileCategories,
+  normalizeMobileCategoryOption,
+  sortMobileCategories,
+} from '../lib/mobile-categories';
 import { supabase } from '../lib/supabase';
 import {
   PaymentCycle,
@@ -19,13 +25,13 @@ import {
 } from '../lib/user-membership';
 
 type MobileTab = 'home' | 'recommend' | 'saved' | 'settings';
-type MobileFilter = 'all' | 'ott' | 'delivery' | 'telecom' | 't-universe';
+type MobileFilter = 'all' | string;
 
 interface MobileMembershipAppProps {
   seedData: SeedData;
 }
 
-type HomeCategoryId = Exclude<MobileFilter, 'all'>;
+type HomeCategoryId = string;
 
 interface CategoryViewState {
   id: HomeCategoryId;
@@ -59,14 +65,6 @@ const mobileNavItems: Array<{ id: MobileTab; label: string }> = [
   { id: 'recommend', label: '추천' },
   { id: 'saved', label: '내 구독' },
   { id: 'settings', label: '설정' },
-];
-
-const myFilters: Array<{ id: MobileFilter; label: string }> = [
-  { id: 'all', label: '전체' },
-  { id: 'ott', label: 'OTT' },
-  { id: 'delivery', label: '배달' },
-  { id: 'telecom', label: '통신사' },
-  { id: 't-universe', label: 'T우주' },
 ];
 
 const inputClassName =
@@ -1041,6 +1039,7 @@ function MobileDetailView({
 
 export default function MobileMembershipApp({ seedData }: MobileMembershipAppProps) {
   const [remoteProductPresets, setRemoteProductPresets] = useState<SeedPreset[]>([]);
+  const [remoteCategories, setRemoteCategories] = useState<MobileCategoryOption[]>([]);
   const presets = useMemo(
     () =>
       buildCatalogPresets(seedData, remoteProductPresets).filter((preset) => {
@@ -1104,6 +1103,36 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadRemoteCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('mobile_categories')
+          .select('*')
+          .order('sort_order', { ascending: true })
+          .order('label', { ascending: true });
+
+        if (error) throw error;
+
+        if (isMounted) {
+          setRemoteCategories(
+            (data || []).map((row) => normalizeMobileCategoryOption(row))
+          );
+        }
+      } catch (error) {
+        console.error('Failed to load mobile categories:', error);
+      }
+    };
+
+    void loadRemoteCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!statusMessage) return;
 
     const timeoutId = window.setTimeout(() => {
@@ -1121,34 +1150,93 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
     setFeaturedIndex(0);
   }, [featuredIndex, featuredPresets.length]);
 
-  const homeSections = useMemo(() => {
-    const sectionOrder: Array<{ id: HomeCategoryId; title: string }> = [
-      { id: 'ott', title: 'OTT 스트리밍' },
-      { id: 'delivery', title: '배달' },
-      { id: 'telecom', title: '통신사 & 혜택' },
-      { id: 't-universe', title: 'T우주 / 생활' },
-    ];
+  const categories = useMemo(() => {
+    const configuredCategories = sortMobileCategories(
+      remoteCategories.length ? remoteCategories : getFallbackMobileCategories()
+    );
+    const configuredKeys = new Set(configuredCategories.map((category) => category.key));
+    const map = new Map<string, MobileCategoryOption>(
+      configuredCategories
+        .filter((category) => category.isActive)
+        .map((category) => [category.key, category])
+    );
 
-    return sectionOrder
-      .map((section) => ({
-        ...section,
+    const appendFallbackCategory = (key?: string | null) => {
+      if (!key || configuredKeys.has(key) || map.has(key)) {
+        return;
+      }
+
+      map.set(key, {
+        id: key,
+        key,
+        label: key,
+        shortLabel: key,
+        description: '',
+        sortOrder: 999,
+        isActive: true,
+      });
+    };
+
+    presets.forEach((preset) => {
+      appendFallbackCategory(
+        getMobileCategoryKey({
+          name: preset.name,
+          provider: preset.provider,
+          carrier: preset.template.seedMeta?.carrier,
+          sourceUrls: preset.template.seedMeta?.sourceUrls,
+          mobileCategory: preset.template.seedMeta?.mobileCategory,
+        })
+      );
+    });
+
+    savedConfigs.forEach((config) => {
+      appendFallbackCategory(
+        getMobileCategoryKey({
+          displayName: config.displayName,
+          provider: config.provider,
+          carrier: config.carrier,
+          sourceUrls: config.sourceUrls,
+          mobileCategory: config.mobileCategory,
+        })
+      );
+    });
+
+    return sortMobileCategories(Array.from(map.values()));
+  }, [presets, remoteCategories, savedConfigs]);
+
+  const homeSections = useMemo(() => {
+    return categories
+      .map((category) => ({
+        id: category.key as HomeCategoryId,
+        title: category.label,
         items: presets.filter((preset) => {
-          const category = getMobileCategoryKey({
+          const categoryKey = getMobileCategoryKey({
             name: preset.name,
             provider: preset.provider,
             carrier: preset.template.seedMeta?.carrier,
             sourceUrls: preset.template.seedMeta?.sourceUrls,
             mobileCategory: preset.template.seedMeta?.mobileCategory,
           });
-          return category === section.id;
+          return categoryKey === category.key;
         }),
       }))
       .filter((section) => section.items.length > 0);
-  }, [presets]);
+  }, [categories, presets]);
 
   const recommendedPresets = useMemo(() => {
     return getRecommendedPresets(presets);
   }, [presets]);
+
+  const savedFilters = useMemo(
+    () => [
+      { id: 'all' as MobileFilter, label: '전체' },
+      ...categories.map((category) => ({
+        id: category.key as MobileFilter,
+        label: category.shortLabel || category.label,
+      })),
+    ],
+    [categories]
+  );
 
   const filteredSavedConfigs = useMemo(() => {
     if (activeFilter === 'all') {
@@ -1170,6 +1258,26 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
   const activeCategorySection = useMemo(() => {
     if (!categoryView) return null;
     return homeSections.find((section) => section.id === categoryView.id) || null;
+  }, [categoryView, homeSections]);
+
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      return;
+    }
+
+    if (!savedFilters.some((filter) => filter.id === activeFilter)) {
+      setActiveFilter('all');
+    }
+  }, [activeFilter, savedFilters]);
+
+  useEffect(() => {
+    if (!categoryView) {
+      return;
+    }
+
+    if (!homeSections.some((section) => section.id === categoryView.id)) {
+      setCategoryView(null);
+    }
   }, [categoryView, homeSections]);
 
   const openPresetDetail = (preset: SeedPreset) => {
@@ -1673,7 +1781,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
             {activeTab === 'saved' ? (
               <div className="px-4 py-5">
                 <div className="flex gap-2 overflow-x-auto pb-3">
-                  {myFilters.map((filter) => (
+                  {savedFilters.map((filter) => (
                     <button
                       key={filter.id}
                       type="button"

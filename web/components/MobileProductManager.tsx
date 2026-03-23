@@ -1,4 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+  MobileCategoryOption,
+  findMobileCategoryLabel,
+  getFallbackMobileCategories,
+  sortMobileCategories,
+} from '../lib/mobile-categories';
 import { supabase } from '../lib/supabase';
 import { PartnerOption, formatPartnerLabel } from '../lib/partners';
 import {
@@ -23,6 +29,7 @@ type SubProductType = SeedSubProduct['type'];
 
 interface MobileProductManagerProps {
   products: ManagedSeedPreset[];
+  categories: MobileCategoryOption[];
   partners: PartnerOption[];
   loading: boolean;
   onReload: () => Promise<void>;
@@ -98,13 +105,6 @@ const productTypeOptions: Array<{ value: EditableProductType; label: string }> =
   { value: 'D', label: '타입 D' },
 ];
 
-const categoryOptions: Array<{ value: MobileCatalogCategory; label: string }> = [
-  { value: 'ott', label: 'OTT 스트리밍' },
-  { value: 'delivery', label: '배달' },
-  { value: 'telecom', label: '통신사 & 혜택' },
-  { value: 't-universe', label: 'T우주 / 생활' },
-];
-
 const carrierOptions: Array<{ value: Carrier; label: string }> = [
   { value: 'general', label: '일반 서비스' },
   { value: 'kt', label: 'KT' },
@@ -169,7 +169,7 @@ function createEmptyTracker(): BenefitTrackerDraft {
   };
 }
 
-function createEmptyDraft(): ProductDraft {
+function createEmptyDraft(defaultCategory: MobileCatalogCategory = 'ott'): ProductDraft {
   return {
     dbId: '',
     seedKey: '',
@@ -179,7 +179,7 @@ function createEmptyDraft(): ProductDraft {
     productType: 'A',
     carrier: 'general',
     partnerId: '',
-    mobileCategory: 'ott',
+    mobileCategory: defaultCategory,
     mobileEnabled: true,
     photos: [''],
     sourceUrls: [''],
@@ -239,7 +239,10 @@ function ensureAtLeastOne(values: string[]) {
   return values.length ? values : [''];
 }
 
-function toDraft(preset: SeedPreset & Partial<ManagedSeedPreset>): ProductDraft {
+function toDraft(
+  preset: SeedPreset & Partial<ManagedSeedPreset>,
+  defaultCategory: MobileCatalogCategory = 'ott'
+): ProductDraft {
   const meta = preset.template.seedMeta || {};
 
   return {
@@ -251,7 +254,7 @@ function toDraft(preset: SeedPreset & Partial<ManagedSeedPreset>): ProductDraft 
     productType: (meta.productType || 'A') as EditableProductType,
     carrier: meta.carrier || 'general',
     partnerId: meta.partnerId || '',
-    mobileCategory: meta.mobileCategory || 'ott',
+    mobileCategory: meta.mobileCategory || defaultCategory,
     mobileEnabled: meta.mobileEnabled ?? meta.defaultEnabled ?? true,
     photos: ensureAtLeastOne([...(meta.photos || [])]),
     sourceUrls: ensureAtLeastOne([...(meta.sourceUrls || [])]),
@@ -427,11 +430,22 @@ function updateStringArray(
 
 export default function MobileProductManager({
   products,
+  categories,
   partners,
   loading,
   onReload,
 }: MobileProductManagerProps) {
-  const [draft, setDraft] = useState<ProductDraft>(createEmptyDraft());
+  const availableCategories = useMemo(
+    () =>
+      sortMobileCategories(
+        categories.length ? categories : getFallbackMobileCategories()
+      ),
+    [categories]
+  );
+  const defaultCategoryKey = availableCategories[0]?.key || 'ott';
+  const [draft, setDraft] = useState<ProductDraft>(() =>
+    createEmptyDraft(defaultCategoryKey)
+  );
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -447,12 +461,28 @@ export default function MobileProductManager({
     return () => window.clearTimeout(timeoutId);
   }, [message]);
 
+  useEffect(() => {
+    setDraft((prev) => {
+      if (
+        prev.mobileCategory &&
+        availableCategories.some((category) => category.key === prev.mobileCategory)
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        mobileCategory: defaultCategoryKey,
+      };
+    });
+  }, [availableCategories, defaultCategoryKey]);
+
   const startNewDraft = () => {
-    setDraft(createEmptyDraft());
+    setDraft(createEmptyDraft(defaultCategoryKey));
   };
 
   const handleLoadPreset = (preset: SeedPreset | ManagedSeedPreset) => {
-    setDraft(toDraft(preset));
+    setDraft(toDraft(preset, defaultCategoryKey));
   };
 
   const handleSave = async () => {
@@ -626,9 +656,10 @@ export default function MobileProductManager({
                           타입 {meta.productType || 'A'}
                         </span>
                         <span className="rounded-full border border-current/20 px-2 py-1">
-                          {categoryOptions.find(
-                            (option) => option.value === meta.mobileCategory
-                          )?.label || '카테고리 미지정'}
+                          {findMobileCategoryLabel(
+                            availableCategories,
+                            meta.mobileCategory
+                          )}
                         </span>
                       </div>
                     </div>
@@ -752,9 +783,9 @@ export default function MobileProductManager({
                 }
                 className={inputClassName}
               >
-                {categoryOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {availableCategories.map((category) => (
+                  <option key={category.key} value={category.key}>
+                    {category.label}
                   </option>
                 ))}
               </select>

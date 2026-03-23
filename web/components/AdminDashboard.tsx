@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SubscriptionPreset } from '../../shared/types';
+import CategoryManager from './CategoryManager';
 import { supabase } from '../lib/supabase';
+import {
+  MobileCategoryOption,
+  MobileCategoryRecord,
+  normalizeMobileCategoryOption,
+} from '../lib/mobile-categories';
 import {
   ManagedSeedPreset,
   normalizePresetRowToManagedSeedPreset,
@@ -19,6 +25,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<
     | 'presets'
     | 'partners'
+    | 'categories'
     | 'mobile-products'
     | 'mobile-display'
     | 'banners'
@@ -28,12 +35,19 @@ export default function AdminDashboard() {
   const [presets, setPresets] = useState<SubscriptionPreset[]>([]);
   const [mobileProducts, setMobileProducts] = useState<ManagedSeedPreset[]>([]);
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
+  const [categories, setCategories] = useState<MobileCategoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [mobileLoading, setMobileLoading] = useState(true);
   const [partnerLoading, setPartnerLoading] = useState(true);
+  const [categoryLoading, setCategoryLoading] = useState(true);
 
   useEffect(() => {
-    void Promise.all([loadPresets(), loadMobileProducts(), loadPartners()]);
+    void Promise.all([
+      loadPresets(),
+      loadMobileProducts(),
+      loadPartners(),
+      loadCategories(),
+    ]);
   }, []);
 
   const loadPresets = async () => {
@@ -116,7 +130,28 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadCategories = async () => {
+    setCategoryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('mobile_categories')
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('label', { ascending: true });
+
+      if (error) throw error;
+
+      setCategories((data || []) as MobileCategoryRecord[]);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      setCategories([]);
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
   const partnerOptions: PartnerOption[] = partners.map(normalizePartnerOption);
+  const categoryOptions: MobileCategoryOption[] = categories.map(normalizeMobileCategoryOption);
 
   const handlePresetCreated = (newPreset: SubscriptionPreset) => {
     setPresets((prev) => [newPreset, ...prev]);
@@ -168,6 +203,7 @@ export default function AdminDashboard() {
             {[
               { id: 'presets', label: '공식 프리셋 관리' },
               { id: 'partners', label: '파트너사 관리' },
+              { id: 'categories', label: '카테고리 관리' },
               { id: 'mobile-products', label: '상품 관리' },
               { id: 'mobile-display', label: '추천 노출 관리' },
               { id: 'banners', label: '배너 관리' },
@@ -222,6 +258,7 @@ export default function AdminDashboard() {
         {activeTab === 'mobile-products' && (
           <MobileProductManager
             products={mobileProducts}
+            categories={categoryOptions}
             partners={partnerOptions}
             loading={mobileLoading}
             onReload={loadMobileProducts}
@@ -236,9 +273,19 @@ export default function AdminDashboard() {
           />
         )}
 
+        {activeTab === 'categories' && (
+          <CategoryManager
+            categories={categories}
+            products={mobileProducts}
+            loading={categoryLoading}
+            onReload={loadCategories}
+          />
+        )}
+
         {activeTab === 'mobile-display' && (
           <MobileDisplayManager
             products={mobileProducts}
+            categories={categoryOptions}
             loading={mobileLoading}
             onReload={loadMobileProducts}
           />

@@ -1,4 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+  MobileCategoryOption,
+  findMobileCategoryLabel,
+  getFallbackMobileCategories,
+  sortMobileCategories,
+} from '../lib/mobile-categories';
 import { supabase } from '../lib/supabase';
 import {
   ManagedSeedPreset,
@@ -7,6 +13,7 @@ import {
 
 interface MobileDisplayManagerProps {
   products: ManagedSeedPreset[];
+  categories: MobileCategoryOption[];
   loading: boolean;
   onReload: () => Promise<void>;
 }
@@ -23,7 +30,10 @@ interface DisplayDraft {
   recommendOrder: string;
 }
 
-function toDisplayDraft(product: ManagedSeedPreset): DisplayDraft {
+function toDisplayDraft(
+  product: ManagedSeedPreset,
+  categories: MobileCategoryOption[]
+): DisplayDraft {
   const meta = product.template.seedMeta || {};
 
   return {
@@ -31,14 +41,7 @@ function toDisplayDraft(product: ManagedSeedPreset): DisplayDraft {
     name: product.name,
     provider: product.provider,
     productType: meta.productType || 'A',
-    categoryLabel:
-      meta.mobileCategory === 'ott'
-        ? 'OTT 스트리밍'
-        : meta.mobileCategory === 'delivery'
-          ? '배달'
-          : meta.mobileCategory === 't-universe'
-            ? 'T우주 / 생활'
-            : '통신사 & 혜택',
+    categoryLabel: findMobileCategoryLabel(categories, meta.mobileCategory),
     homeFeatured: meta.homeFeatured ?? false,
     homeFeaturedOrder:
       meta.homeFeaturedOrder != null ? String(meta.homeFeaturedOrder) : '',
@@ -59,16 +62,24 @@ function parseNullableNumber(value: string) {
 
 export default function MobileDisplayManager({
   products,
+  categories,
   loading,
   onReload,
 }: MobileDisplayManagerProps) {
   const [drafts, setDrafts] = useState<DisplayDraft[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const availableCategories = useMemo(
+    () =>
+      sortMobileCategories(
+        categories.length ? categories : getFallbackMobileCategories()
+      ),
+    [categories]
+  );
 
   useEffect(() => {
-    setDrafts(products.map(toDisplayDraft));
-  }, [products]);
+    setDrafts(products.map((product) => toDisplayDraft(product, availableCategories)));
+  }, [availableCategories, products]);
 
   useEffect(() => {
     if (!message) return;
