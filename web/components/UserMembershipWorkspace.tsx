@@ -38,6 +38,7 @@ const productTypeLabels: Record<'all' | ProductType, string> = {
   A: '타입 A',
   B: '타입 B',
   C: '타입 C',
+  D: '타입 D',
 };
 
 const paymentCycleLabels: Record<PaymentCycle, string> = {
@@ -178,6 +179,7 @@ function cloneConfig(config: UserMembershipConfig): UserMembershipConfig {
     tierSuggestions: [...config.tierSuggestions],
     subProducts: config.subProducts.map((subProduct) => ({ ...subProduct })),
     usageEntries: config.usageEntries.map((entry) => ({ ...entry })),
+    calendarEntries: config.calendarEntries.map((entry) => ({ ...entry })),
     benefitTrackers: config.benefitTrackers.map((tracker) => ({
       ...tracker,
       photos: normalizePhotos(tracker.photos),
@@ -796,7 +798,7 @@ export default function UserMembershipWorkspace({
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {(['all', 'telecom', 'A', 'B', 'C'] as Array<
+                {(['all', 'telecom', 'A', 'B', 'C', 'D'] as Array<
                   'all' | ProductType
                 >).map((type) => (
                   <button

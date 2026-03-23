@@ -1,5 +1,5 @@
 export type Carrier = 'kt' | 'skt' | 'lguplus' | 'general';
-export type ProductType = 'A' | 'B' | 'C' | 'telecom';
+export type ProductType = 'A' | 'B' | 'C' | 'D' | 'telecom';
 export type CatalogKind = 'subscription' | 'telecom';
 export type ReminderRepeatUnit =
   | 'day'
@@ -125,6 +125,13 @@ export interface UsageEntry {
   amount?: number | null;
 }
 
+export interface CalendarMemoEntry {
+  id: string;
+  dateKey: string;
+  note: string;
+  savedAt: string;
+}
+
 export interface BenefitTrackerState extends BenefitTrackerSeed {
   note: string;
   photos: string[];
@@ -177,6 +184,7 @@ export interface UserMembershipConfig {
   usageOverflowMessage: string;
   usageCycleAmountLimit: number | null;
   usageEntries: UsageEntry[];
+  calendarEntries: CalendarMemoEntry[];
   benefitTrackers: BenefitTrackerState[];
   createdAt: string;
   updatedAt: string;
@@ -255,6 +263,7 @@ export function createDraftFromSeedPreset(preset: SeedPreset): UserMembershipCon
       `${preset.name}는 ${formatCycleLimit(meta.usageCycleUnit || 'month', meta.usageCycleLimit)} 혜택입니다. 그래도 기록할까요?`,
     usageCycleAmountLimit: meta.usageCycleAmountLimit ?? null,
     usageEntries: [],
+    calendarEntries: [],
     benefitTrackers: cloneBenefitTrackers(meta.benefitTrackers || []),
     createdAt: now,
     updatedAt: now,
@@ -367,6 +376,7 @@ function normalizeSavedConfig(config: UserMembershipConfig): UserMembershipConfi
     usageOverflowMessage: config.usageOverflowMessage || '',
     usageCycleAmountLimit: config.usageCycleAmountLimit ?? null,
     usageEntries: Array.isArray(config.usageEntries) ? config.usageEntries : [],
+    calendarEntries: Array.isArray(config.calendarEntries) ? config.calendarEntries : [],
     benefitTrackers: Array.isArray(config.benefitTrackers)
       ? config.benefitTrackers.map((tracker) => ({
           ...tracker,
@@ -456,6 +466,7 @@ function migrateLegacyConfig(value: unknown): UserMembershipConfig | null {
     usageOverflowMessage: '',
     usageCycleAmountLimit: null,
     usageEntries: [],
+    calendarEntries: [],
     benefitTrackers: [],
     createdAt: legacy.createdAt || new Date().toISOString(),
     updatedAt: legacy.updatedAt || new Date().toISOString(),
@@ -648,7 +659,39 @@ function buildSampleProductPresets(): SeedPreset[] {
     ],
   });
 
-  return [...typeAPresets, typeBPreset, typeCPreset];
+  const typeDPreset = createSamplePreset({
+    seedKey: 'sample-olive-young-calendar-type-d',
+    name: '올리브영 3종 쿠폰팩',
+    provider: 'SKT',
+    description:
+      '월별 캘린더에 사용일과 메모를 기록하는 타입 D 샘플',
+    carrier: 'skt',
+    productType: 'D',
+    supportsBilling: false,
+    sourceUrls: [
+      'https://m.sktuniverse.co.kr/netfunnel?path=%2Fproduct%2Fdetail%3FprdId%3DPR00000758',
+    ],
+    sourceCheckedAt: '2026-03-19',
+    subProducts: [
+      {
+        name: '4천 원 모바일 상품권',
+        type: 'coupon',
+        description: '사용일을 캘린더에 기록',
+      },
+      {
+        name: '3천 원 할인 쿠폰',
+        type: 'coupon',
+        description: '사용일을 캘린더에 기록',
+      },
+      {
+        name: '무료 배송 쿠폰',
+        type: 'coupon',
+        description: '사용일을 캘린더에 기록',
+      },
+    ],
+  });
+
+  return [...typeAPresets, typeBPreset, typeCPreset, typeDPreset];
 }
 
 function createSamplePreset(input: {

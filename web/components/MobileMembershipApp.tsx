@@ -70,6 +70,7 @@ function cloneConfig(config: UserMembershipConfig): UserMembershipConfig {
     tierSuggestions: [...config.tierSuggestions],
     subProducts: config.subProducts.map((subProduct) => ({ ...subProduct })),
     usageEntries: config.usageEntries.map((entry) => ({ ...entry })),
+    calendarEntries: config.calendarEntries.map((entry) => ({ ...entry })),
     benefitTrackers: config.benefitTrackers.map((tracker) => ({
       ...tracker,
       photos: normalizePhotos(tracker.photos),
@@ -164,8 +165,10 @@ function getCategoryKey(item: {
   name?: string;
   provider?: string;
   carrier?: string;
+  sourceUrls?: string[];
 }) {
   const text = `${item.displayName || item.name || ''} ${item.provider || ''}`.toLowerCase();
+  const sourceText = (item.sourceUrls || []).join(' ').toLowerCase();
 
   if (
     text.includes('넷플릭스') ||
@@ -186,7 +189,7 @@ function getCategoryKey(item: {
     return 'delivery' as const;
   }
 
-  if (text.includes('우주')) {
+  if (text.includes('우주') || sourceText.includes('sktuniverse.co.kr')) {
     return 't-universe' as const;
   }
 
@@ -215,9 +218,9 @@ function getPreviewImage(
 function getFeaturedPresets(presets: SeedPreset[]) {
   const preferredKeys = [
     'sample-netflix-type-a',
+    'sample-olive-young-calendar-type-d',
     'sample-t-universe-life-type-c',
     'sample-kt-vip-choice-type-b',
-    'sample-coupang-type-a',
   ];
 
   const mapped = preferredKeys
@@ -247,13 +250,33 @@ function buildCalendarDays(year: number, month: number) {
   return cells;
 }
 
-function MobileCalendarPanel({ records }: { records: CalendarRecord[] }) {
+function getTodayDateKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+interface MobileCalendarPanelProps {
+  records: CalendarRecord[];
+  selectedDateKey?: string;
+  onSelectDate?: (dateKey: string) => void;
+  showRecordsPanel?: boolean;
+  helperText?: string;
+  emptyText?: string;
+}
+
+function MobileCalendarPanel({
+  records,
+  selectedDateKey: controlledSelectedDateKey,
+  onSelectDate,
+  showRecordsPanel = true,
+  helperText = '날짜를 선택하면 해당 날짜의 사용 기록을 볼 수 있습니다.',
+  emptyText = '선택한 날짜의 기록이 없습니다.',
+}: MobileCalendarPanelProps) {
   const today = new Date();
   const [cursor, setCursor] = useState({
     year: today.getFullYear(),
     month: today.getMonth(),
   });
-  const [selectedDateKey, setSelectedDateKey] = useState('');
+  const [internalSelectedDateKey, setInternalSelectedDateKey] = useState('');
 
   const grouped = useMemo(() => {
     return records.reduce<Record<string, CalendarRecord[]>>((acc, record) => {
@@ -263,6 +286,8 @@ function MobileCalendarPanel({ records }: { records: CalendarRecord[] }) {
     }, {});
   }, [records]);
 
+  const selectedDateKey = controlledSelectedDateKey ?? internalSelectedDateKey;
+
   const monthCells = useMemo(
     () => buildCalendarDays(cursor.year, cursor.month),
     [cursor.month, cursor.year]
@@ -271,6 +296,34 @@ function MobileCalendarPanel({ records }: { records: CalendarRecord[] }) {
   const visibleMonthLabel = `${cursor.year}. ${String(cursor.month + 1).padStart(2, '0')}`;
 
   const selectedRecords = selectedDateKey ? grouped[selectedDateKey] || [] : [];
+
+  useEffect(() => {
+    if (controlledSelectedDateKey !== undefined || selectedDateKey || !records.length) {
+      return;
+    }
+
+    setInternalSelectedDateKey(records[0].checkedAt.slice(0, 10));
+  }, [controlledSelectedDateKey, records, selectedDateKey]);
+
+  useEffect(() => {
+    if (!selectedDateKey) return;
+
+    const selectedDate = new Date(selectedDateKey);
+    if (Number.isNaN(selectedDate.getTime())) return;
+
+    setCursor({
+      year: selectedDate.getFullYear(),
+      month: selectedDate.getMonth(),
+    });
+  }, [selectedDateKey]);
+
+  const handleSelectDate = (dateKey: string) => {
+    if (controlledSelectedDateKey === undefined) {
+      setInternalSelectedDateKey(dateKey);
+    }
+
+    onSelectDate?.(dateKey);
+  };
 
   return (
     <div className="rounded-[24px] border border-slate-300 bg-white p-4">
@@ -324,7 +377,7 @@ function MobileCalendarPanel({ records }: { records: CalendarRecord[] }) {
             <button
               key={dateKey}
               type="button"
-              onClick={() => setSelectedDateKey(dateKey)}
+              onClick={() => handleSelectDate(dateKey)}
               className={`relative h-9 rounded-full text-sm transition ${
                 isSelected
                   ? 'bg-slate-900 text-white'
@@ -346,36 +399,36 @@ function MobileCalendarPanel({ records }: { records: CalendarRecord[] }) {
         })}
       </div>
 
-      <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
-        {selectedDateKey ? (
-          <>
-            <p className="text-sm font-semibold text-slate-900">
-              {formatDateLabel(selectedDateKey)}
-            </p>
-            <div className="mt-2 space-y-2">
-              {selectedRecords.length ? (
-                selectedRecords.map((record) => (
-                  <div
-                    key={record.id}
-                    className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
-                  >
-                    <p className="font-medium text-slate-900">{record.label}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {formatDateTime(record.checkedAt)}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-500">선택한 날짜의 기록이 없습니다.</p>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-slate-500">
-            날짜를 선택하면 해당 날짜의 사용 기록을 볼 수 있습니다.
-          </p>
-        )}
-      </div>
+      {showRecordsPanel ? (
+        <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+          {selectedDateKey ? (
+            <>
+              <p className="text-sm font-semibold text-slate-900">
+                {formatDateLabel(selectedDateKey)}
+              </p>
+              <div className="mt-2 space-y-2">
+                {selectedRecords.length ? (
+                  selectedRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
+                    >
+                      <p className="font-medium text-slate-900">{record.label}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {formatDateTime(record.checkedAt)}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500">{emptyText}</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-slate-500">{helperText}</p>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -395,6 +448,7 @@ interface MobileDetailViewProps {
   onRemoveUsageEntry: (entryId: string) => void;
   onAddTrackerEntry: (trackerId: string) => void;
   onRemoveTrackerEntry: (trackerId: string, entryId: string) => void;
+  onSaveCalendarEntry: (dateKey: string, note: string) => void;
 }
 
 function MobileDetailView({
@@ -409,8 +463,11 @@ function MobileDetailView({
   onRemoveUsageEntry,
   onAddTrackerEntry,
   onRemoveTrackerEntry,
+  onSaveCalendarEntry,
 }: MobileDetailViewProps) {
   const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedCalendarDateKey, setSelectedCalendarDateKey] = useState('');
+  const [calendarNoteDraft, setCalendarNoteDraft] = useState('');
   const { draft, preset } = detail;
   const previewImage = getPreviewImage(preset, draft);
 
@@ -452,6 +509,49 @@ function MobileDetailView({
 
     return [];
   }, [draft.benefitTrackers, draft.productType, draft.usageEntries]);
+
+  const typeDCalendarRecords = useMemo<CalendarRecord[]>(() => {
+    if (draft.productType !== 'D') {
+      return [];
+    }
+
+    return draft.calendarEntries.map((entry) => ({
+      id: entry.id,
+      label: entry.note,
+      checkedAt: `${entry.dateKey}T12:00:00`,
+    }));
+  }, [draft.calendarEntries, draft.productType]);
+
+  const selectedCalendarEntry =
+    draft.productType === 'D' && selectedCalendarDateKey
+      ? draft.calendarEntries.find((entry) => entry.dateKey === selectedCalendarDateKey) || null
+      : null;
+
+  useEffect(() => {
+    setShowCalendar(false);
+
+    if (draft.productType === 'D') {
+      const defaultDateKey = draft.calendarEntries[0]?.dateKey || getTodayDateKey();
+      const existingEntry =
+        draft.calendarEntries.find((entry) => entry.dateKey === defaultDateKey) || null;
+      setSelectedCalendarDateKey(defaultDateKey);
+      setCalendarNoteDraft(existingEntry?.note || '');
+      return;
+    }
+
+    setSelectedCalendarDateKey('');
+    setCalendarNoteDraft('');
+  }, [draft.id, draft.productType]);
+
+  useEffect(() => {
+    if (draft.productType !== 'D' || !selectedCalendarDateKey) {
+      return;
+    }
+
+    const existingEntry =
+      draft.calendarEntries.find((entry) => entry.dateKey === selectedCalendarDateKey) || null;
+    setCalendarNoteDraft(existingEntry?.note || '');
+  }, [draft.calendarEntries, draft.productType, selectedCalendarDateKey]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -713,141 +813,202 @@ function MobileDetailView({
             </section>
           ) : null}
 
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <p className="text-base font-semibold text-slate-900">사용자 메모</p>
-            <textarea
-              value={draft.userMemo}
-              onChange={(event) => onUpdateDraft('userMemo', event.target.value)}
-              rows={4}
-              className={`${inputClassName} mt-3`}
-              placeholder="예: 프로필 4개 사용 / 가족 공유 / 사용 메모"
-            />
-          </section>
+          {draft.productType === 'D' ? (
+            <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+              <div>
+                <p className="text-base font-semibold text-slate-900">사용 체크 관리</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  캘린더에서 날짜를 고르고 사용 메모를 저장하는 타입 D 화면입니다.
+                </p>
+              </div>
 
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-base font-semibold text-slate-900">첨부 이미지</p>
-              <button
-                type="button"
-                onClick={onAddPhotoField}
-                disabled={draft.photos.length >= 10}
-                className="rounded-full border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 disabled:opacity-50"
-              >
-                + 추가
-              </button>
-            </div>
+              <div className="mt-4">
+                <MobileCalendarPanel
+                  records={typeDCalendarRecords}
+                  selectedDateKey={selectedCalendarDateKey}
+                  onSelectDate={setSelectedCalendarDateKey}
+                  showRecordsPanel={false}
+                />
+              </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {draft.photos.map((photo, index) => (
-                <div key={`${draft.id}-mobile-photo-${index}`}>
-                  <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[20px] border border-slate-300 bg-[#f4f4f2] text-xs text-slate-500">
-                    {photo ? (
-                      <img
-                        src={photo}
-                        alt={`첨부 이미지 ${index + 1}`}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      'IMG'
-                    )}
-                  </div>
-                  <input
-                    value={photo}
-                    onChange={(event) => onUpdatePhoto(index, event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-2 py-2 text-[11px] text-slate-700 outline-none"
-                    placeholder={`URL ${index + 1}`}
-                  />
+              <div className="mt-4 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedCalendarDateKey
+                    ? formatDateLabel(selectedCalendarDateKey)
+                    : '날짜 선택'}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {selectedCalendarEntry
+                    ? `마지막 저장 ${formatDateTime(selectedCalendarEntry.savedAt)}`
+                    : '선택한 날짜에 남길 메모를 입력해 저장하세요.'}
+                </p>
+                <textarea
+                  value={calendarNoteDraft}
+                  onChange={(event) => setCalendarNoteDraft(event.target.value)}
+                  rows={3}
+                  className={`${inputClassName} mt-3`}
+                  placeholder="예: 사용자가 생성한 메모 입력"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!selectedCalendarDateKey) {
+                      alert('날짜를 선택해 주세요.');
+                      return;
+                    }
+
+                    if (!calendarNoteDraft.trim()) {
+                      alert('메모를 입력한 뒤 저장해 주세요.');
+                      return;
+                    }
+
+                    onSaveCalendarEntry(selectedCalendarDateKey, calendarNoteDraft);
+                  }}
+                  className="mt-3 w-full rounded-[20px] bg-slate-900 px-4 py-3 text-sm font-medium text-white"
+                >
+                  저장
+                </button>
+              </div>
+            </section>
+          ) : (
+            <>
+              <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+                <p className="text-base font-semibold text-slate-900">사용자 메모</p>
+                <textarea
+                  value={draft.userMemo}
+                  onChange={(event) => onUpdateDraft('userMemo', event.target.value)}
+                  rows={4}
+                  className={`${inputClassName} mt-3`}
+                  placeholder="예: 프로필 4개 사용 / 가족 공유 / 사용 메모"
+                />
+              </section>
+
+              <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-base font-semibold text-slate-900">첨부 이미지</p>
                   <button
                     type="button"
-                    onClick={() => onRemovePhotoField(index)}
-                    className="mt-2 w-full rounded-xl border border-slate-300 px-2 py-2 text-[11px] text-slate-600"
+                    onClick={onAddPhotoField}
+                    disabled={draft.photos.length >= 10}
+                    className="rounded-full border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 disabled:opacity-50"
                   >
-                    삭제
+                    + 추가
                   </button>
                 </div>
-              ))}
-            </div>
-          </section>
 
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <p className="text-base font-semibold text-slate-900">결제정보</p>
-            <div className="mt-4 grid gap-3">
-              <input
-                value={draft.selectedTier}
-                onChange={(event) => onUpdateDraft('selectedTier', event.target.value)}
-                className={inputClassName}
-                placeholder="상품 티어 또는 플랜명"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={draft.billingCycle}
-                  onChange={(event) =>
-                    onUpdateDraft('billingCycle', event.target.value as PaymentCycle)
-                  }
-                  className={inputClassName}
-                >
-                  {(Object.keys(paymentCycleLabels) as PaymentCycle[]).map((cycle) => (
-                    <option key={cycle} value={cycle}>
-                      {paymentCycleLabels[cycle]}
-                    </option>
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  {draft.photos.map((photo, index) => (
+                    <div key={`${draft.id}-mobile-photo-${index}`}>
+                      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[20px] border border-slate-300 bg-[#f4f4f2] text-xs text-slate-500">
+                        {photo ? (
+                          <img
+                            src={photo}
+                            alt={`첨부 이미지 ${index + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          'IMG'
+                        )}
+                      </div>
+                      <input
+                        value={photo}
+                        onChange={(event) => onUpdatePhoto(index, event.target.value)}
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-2 py-2 text-[11px] text-slate-700 outline-none"
+                        placeholder={`URL ${index + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => onRemovePhotoField(index)}
+                        className="mt-2 w-full rounded-xl border border-slate-300 px-2 py-2 text-[11px] text-slate-600"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   ))}
-                </select>
-                <input
-                  type="number"
-                  min="0"
-                  value={draft.price ?? ''}
-                  onChange={(event) =>
-                    onUpdateDraft(
-                      'price',
-                      event.target.value === '' ? null : Number(event.target.value)
-                    )
-                  }
-                  className={inputClassName}
-                  placeholder="가격"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  value={draft.paymentDate}
-                  onChange={(event) => onUpdateDraft('paymentDate', event.target.value)}
-                  className={inputClassName}
-                />
-                <input
-                  type="date"
-                  value={draft.startedAt}
-                  onChange={(event) => onUpdateDraft('startedAt', event.target.value)}
-                  className={inputClassName}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={draft.paymentMethodType}
-                  onChange={(event) =>
-                    onUpdateDraft(
-                      'paymentMethodType',
-                      event.target.value as PaymentMethodType
-                    )
-                  }
-                  className={inputClassName}
-                >
-                  {(Object.keys(paymentMethodLabels) as PaymentMethodType[]).map((method) => (
-                    <option key={method} value={method}>
-                      {paymentMethodLabels[method]}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  value={draft.paymentMethodLabel}
-                  onChange={(event) =>
-                    onUpdateDraft('paymentMethodLabel', event.target.value)
-                  }
-                  className={inputClassName}
-                  placeholder="카드명 또는 계좌명"
-                />
-              </div>
-            </div>
-          </section>
+                </div>
+              </section>
+
+              <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+                <p className="text-base font-semibold text-slate-900">결제정보</p>
+                <div className="mt-4 grid gap-3">
+                  <input
+                    value={draft.selectedTier}
+                    onChange={(event) => onUpdateDraft('selectedTier', event.target.value)}
+                    className={inputClassName}
+                    placeholder="상품 티어 또는 플랜명"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={draft.billingCycle}
+                      onChange={(event) =>
+                        onUpdateDraft('billingCycle', event.target.value as PaymentCycle)
+                      }
+                      className={inputClassName}
+                    >
+                      {(Object.keys(paymentCycleLabels) as PaymentCycle[]).map((cycle) => (
+                        <option key={cycle} value={cycle}>
+                          {paymentCycleLabels[cycle]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft.price ?? ''}
+                      onChange={(event) =>
+                        onUpdateDraft(
+                          'price',
+                          event.target.value === '' ? null : Number(event.target.value)
+                        )
+                      }
+                      className={inputClassName}
+                      placeholder="가격"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="date"
+                      value={draft.paymentDate}
+                      onChange={(event) => onUpdateDraft('paymentDate', event.target.value)}
+                      className={inputClassName}
+                    />
+                    <input
+                      type="date"
+                      value={draft.startedAt}
+                      onChange={(event) => onUpdateDraft('startedAt', event.target.value)}
+                      className={inputClassName}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={draft.paymentMethodType}
+                      onChange={(event) =>
+                        onUpdateDraft(
+                          'paymentMethodType',
+                          event.target.value as PaymentMethodType
+                        )
+                      }
+                      className={inputClassName}
+                    >
+                      {(Object.keys(paymentMethodLabels) as PaymentMethodType[]).map((method) => (
+                        <option key={method} value={method}>
+                          {paymentMethodLabels[method]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={draft.paymentMethodLabel}
+                      onChange={(event) =>
+                        onUpdateDraft('paymentMethodLabel', event.target.value)
+                      }
+                      className={inputClassName}
+                      placeholder="카드명 또는 계좌명"
+                    />
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -918,6 +1079,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
             name: preset.name,
             provider: preset.provider,
             carrier: preset.template.seedMeta?.carrier,
+            sourceUrls: preset.template.seedMeta?.sourceUrls,
           });
           return category === section.id;
         }),
@@ -931,8 +1093,8 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
       'sample-tving-type-a',
       'sample-kt-vip-choice-type-b',
       'sample-t-universe-life-type-c',
+      'sample-olive-young-calendar-type-d',
       'sample-wavve-type-a',
-      'sample-baemin-type-a',
     ];
 
     const items = recommendedKeys
@@ -952,6 +1114,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
         displayName: config.displayName,
         provider: config.provider,
         carrier: config.carrier,
+        sourceUrls: config.sourceUrls,
       });
       return category === activeFilter;
     });
@@ -1171,6 +1334,42 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
     );
   };
 
+  const saveDetailCalendarEntry = (dateKey: string, note: string) => {
+    setDetail((prev) => {
+      if (!prev) return prev;
+
+      const trimmedNote = note.trim();
+      if (!trimmedNote) return prev;
+
+      const now = new Date().toISOString();
+      const existingEntry =
+        prev.draft.calendarEntries.find((entry) => entry.dateKey === dateKey) || null;
+      const nextEntry = existingEntry
+        ? {
+            ...existingEntry,
+            note: trimmedNote,
+            savedAt: now,
+          }
+        : {
+            id: `${prev.draft.id}-calendar-${Date.now()}`,
+            dateKey,
+            note: trimmedNote,
+            savedAt: now,
+          };
+
+      return {
+        ...prev,
+        draft: {
+          ...prev.draft,
+          calendarEntries: [
+            ...prev.draft.calendarEntries.filter((entry) => entry.dateKey !== dateKey),
+            nextEntry,
+          ].sort((left, right) => left.dateKey.localeCompare(right.dateKey)),
+        },
+      };
+    });
+  };
+
   const saveDetail = () => {
     if (!detail) return;
 
@@ -1253,6 +1452,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
             onRemoveUsageEntry={removeDetailUsageEntry}
             onAddTrackerEntry={addDetailTrackerEntry}
             onRemoveTrackerEntry={removeDetailTrackerEntry}
+            onSaveCalendarEntry={saveDetailCalendarEntry}
           />
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto pb-28">
