@@ -870,145 +870,143 @@ function MobileDetailView({
                 </button>
               </div>
             </section>
-          ) : (
-            <>
-              <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-                <p className="text-base font-semibold text-slate-900">사용자 메모</p>
-                <textarea
-                  value={draft.userMemo}
-                  onChange={(event) => onUpdateDraft('userMemo', event.target.value)}
-                  rows={4}
-                  className={`${inputClassName} mt-3`}
-                  placeholder="예: 프로필 4개 사용 / 가족 공유 / 사용 메모"
-                />
-              </section>
+          ) : null}
 
-              <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-base font-semibold text-slate-900">첨부 이미지</p>
+          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+            <p className="text-base font-semibold text-slate-900">사용자 메모</p>
+            <textarea
+              value={draft.userMemo}
+              onChange={(event) => onUpdateDraft('userMemo', event.target.value)}
+              rows={4}
+              className={`${inputClassName} mt-3`}
+              placeholder="예: 프로필 4개 사용 / 가족 공유 / 사용 메모"
+            />
+          </section>
+
+          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-base font-semibold text-slate-900">첨부 이미지</p>
+              <button
+                type="button"
+                onClick={onAddPhotoField}
+                disabled={draft.photos.length >= 10}
+                className="rounded-full border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 disabled:opacity-50"
+              >
+                + 추가
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {draft.photos.map((photo, index) => (
+                <div key={`${draft.id}-mobile-photo-${index}`}>
+                  <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[20px] border border-slate-300 bg-[#f4f4f2] text-xs text-slate-500">
+                    {photo ? (
+                      <img
+                        src={photo}
+                        alt={`첨부 이미지 ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      'IMG'
+                    )}
+                  </div>
+                  <input
+                    value={photo}
+                    onChange={(event) => onUpdatePhoto(index, event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-2 py-2 text-[11px] text-slate-700 outline-none"
+                    placeholder={`URL ${index + 1}`}
+                  />
                   <button
                     type="button"
-                    onClick={onAddPhotoField}
-                    disabled={draft.photos.length >= 10}
-                    className="rounded-full border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 disabled:opacity-50"
+                    onClick={() => onRemovePhotoField(index)}
+                    className="mt-2 w-full rounded-xl border border-slate-300 px-2 py-2 text-[11px] text-slate-600"
                   >
-                    + 추가
+                    삭제
                   </button>
                 </div>
+              ))}
+            </div>
+          </section>
 
-                <div className="mt-4 grid grid-cols-3 gap-3">
-                  {draft.photos.map((photo, index) => (
-                    <div key={`${draft.id}-mobile-photo-${index}`}>
-                      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[20px] border border-slate-300 bg-[#f4f4f2] text-xs text-slate-500">
-                        {photo ? (
-                          <img
-                            src={photo}
-                            alt={`첨부 이미지 ${index + 1}`}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          'IMG'
-                        )}
-                      </div>
-                      <input
-                        value={photo}
-                        onChange={(event) => onUpdatePhoto(index, event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-2 py-2 text-[11px] text-slate-700 outline-none"
-                        placeholder={`URL ${index + 1}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => onRemovePhotoField(index)}
-                        className="mt-2 w-full rounded-xl border border-slate-300 px-2 py-2 text-[11px] text-slate-600"
-                      >
-                        삭제
-                      </button>
-                    </div>
+          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+            <p className="text-base font-semibold text-slate-900">결제정보</p>
+            <div className="mt-4 grid gap-3">
+              <input
+                value={draft.selectedTier}
+                onChange={(event) => onUpdateDraft('selectedTier', event.target.value)}
+                className={inputClassName}
+                placeholder="상품 티어 또는 플랜명"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <select
+                  value={draft.billingCycle}
+                  onChange={(event) =>
+                    onUpdateDraft('billingCycle', event.target.value as PaymentCycle)
+                  }
+                  className={inputClassName}
+                >
+                  {(Object.keys(paymentCycleLabels) as PaymentCycle[]).map((cycle) => (
+                    <option key={cycle} value={cycle}>
+                      {paymentCycleLabels[cycle]}
+                    </option>
                   ))}
-                </div>
-              </section>
-
-              <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-                <p className="text-base font-semibold text-slate-900">결제정보</p>
-                <div className="mt-4 grid gap-3">
-                  <input
-                    value={draft.selectedTier}
-                    onChange={(event) => onUpdateDraft('selectedTier', event.target.value)}
-                    className={inputClassName}
-                    placeholder="상품 티어 또는 플랜명"
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <select
-                      value={draft.billingCycle}
-                      onChange={(event) =>
-                        onUpdateDraft('billingCycle', event.target.value as PaymentCycle)
-                      }
-                      className={inputClassName}
-                    >
-                      {(Object.keys(paymentCycleLabels) as PaymentCycle[]).map((cycle) => (
-                        <option key={cycle} value={cycle}>
-                          {paymentCycleLabels[cycle]}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min="0"
-                      value={draft.price ?? ''}
-                      onChange={(event) =>
-                        onUpdateDraft(
-                          'price',
-                          event.target.value === '' ? null : Number(event.target.value)
-                        )
-                      }
-                      className={inputClassName}
-                      placeholder="가격"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="date"
-                      value={draft.paymentDate}
-                      onChange={(event) => onUpdateDraft('paymentDate', event.target.value)}
-                      className={inputClassName}
-                    />
-                    <input
-                      type="date"
-                      value={draft.startedAt}
-                      onChange={(event) => onUpdateDraft('startedAt', event.target.value)}
-                      className={inputClassName}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <select
-                      value={draft.paymentMethodType}
-                      onChange={(event) =>
-                        onUpdateDraft(
-                          'paymentMethodType',
-                          event.target.value as PaymentMethodType
-                        )
-                      }
-                      className={inputClassName}
-                    >
-                      {(Object.keys(paymentMethodLabels) as PaymentMethodType[]).map((method) => (
-                        <option key={method} value={method}>
-                          {paymentMethodLabels[method]}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      value={draft.paymentMethodLabel}
-                      onChange={(event) =>
-                        onUpdateDraft('paymentMethodLabel', event.target.value)
-                      }
-                      className={inputClassName}
-                      placeholder="카드명 또는 계좌명"
-                    />
-                  </div>
-                </div>
-              </section>
-            </>
-          )}
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  value={draft.price ?? ''}
+                  onChange={(event) =>
+                    onUpdateDraft(
+                      'price',
+                      event.target.value === '' ? null : Number(event.target.value)
+                    )
+                  }
+                  className={inputClassName}
+                  placeholder="가격"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="date"
+                  value={draft.paymentDate}
+                  onChange={(event) => onUpdateDraft('paymentDate', event.target.value)}
+                  className={inputClassName}
+                />
+                <input
+                  type="date"
+                  value={draft.startedAt}
+                  onChange={(event) => onUpdateDraft('startedAt', event.target.value)}
+                  className={inputClassName}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <select
+                  value={draft.paymentMethodType}
+                  onChange={(event) =>
+                    onUpdateDraft(
+                      'paymentMethodType',
+                      event.target.value as PaymentMethodType
+                    )
+                  }
+                  className={inputClassName}
+                >
+                  {(Object.keys(paymentMethodLabels) as PaymentMethodType[]).map((method) => (
+                    <option key={method} value={method}>
+                      {paymentMethodLabels[method]}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={draft.paymentMethodLabel}
+                  onChange={(event) =>
+                    onUpdateDraft('paymentMethodLabel', event.target.value)
+                  }
+                  className={inputClassName}
+                  placeholder="카드명 또는 계좌명"
+                />
+              </div>
+            </div>
+          </section>
 
           <div className="grid grid-cols-2 gap-3">
             <button
