@@ -49,6 +49,8 @@ export interface BenefitTrackerSeed {
 
 export interface SeedMeta {
   seedKey?: string;
+  partnerId?: string | null;
+  partnerName?: string | null;
   carrier?: Carrier;
   membershipGrade?: string;
   presetType?: string;
@@ -132,6 +134,7 @@ export interface SubscriptionPresetRow {
   name: string;
   provider: string;
   description: string | null;
+  partner_id?: string | null;
   is_official?: boolean | null;
   created_by?: string | null;
   likes?: number | null;
@@ -143,6 +146,8 @@ export interface SubscriptionPresetRow {
 
 export interface ManagedSeedPreset extends SeedPreset {
   dbId: string;
+  partnerId?: string | null;
+  partnerName?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -266,6 +271,8 @@ export function normalizePresetRowToManagedSeedPreset(
 
   return {
     dbId: row.id,
+    partnerId: row.partner_id || seedMeta.partnerId || null,
+    partnerName: seedMeta.partnerName || null,
     createdAt: row.created_at || '',
     updatedAt: row.updated_at || '',
     seedKey,
@@ -291,6 +298,8 @@ export function normalizePresetRowToManagedSeedPreset(
       seedMeta: {
         ...seedMeta,
         seedKey,
+        partnerId: row.partner_id || seedMeta.partnerId || null,
+        partnerName: seedMeta.partnerName || null,
         catalogKind: 'subscription',
         productType: seedMeta.productType || 'A',
         photos: normalizePhotos(seedMeta.photos || []),
@@ -313,6 +322,7 @@ export function buildSubscriptionPresetRowInput(preset: SeedPreset) {
     name: preset.name,
     provider: preset.provider,
     description: preset.description,
+    partner_id: seedMeta.partnerId || null,
     is_official: preset.isOfficial,
     template: {
       subscription: {

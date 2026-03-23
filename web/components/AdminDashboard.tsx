@@ -6,9 +6,11 @@ import {
   ManagedSeedPreset,
   normalizePresetRowToManagedSeedPreset,
 } from '../lib/user-membership';
+import { PartnerOption, PartnerRecord, normalizePartnerOption } from '../lib/partners';
 import BannerManager from './BannerManager';
 import MobileDisplayManager from './MobileDisplayManager';
 import MobileProductManager from './MobileProductManager';
+import PartnerManager from './PartnerManager';
 import PresetForm from './PresetForm';
 import PresetList from './PresetList';
 import UserPresetList from './UserPresetList';
@@ -16,6 +18,7 @@ import UserPresetList from './UserPresetList';
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<
     | 'presets'
+    | 'partners'
     | 'mobile-products'
     | 'mobile-display'
     | 'banners'
@@ -24,11 +27,13 @@ export default function AdminDashboard() {
   >('presets');
   const [presets, setPresets] = useState<SubscriptionPreset[]>([]);
   const [mobileProducts, setMobileProducts] = useState<ManagedSeedPreset[]>([]);
+  const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [mobileLoading, setMobileLoading] = useState(true);
+  const [partnerLoading, setPartnerLoading] = useState(true);
 
   useEffect(() => {
-    void Promise.all([loadPresets(), loadMobileProducts()]);
+    void Promise.all([loadPresets(), loadMobileProducts(), loadPartners()]);
   }, []);
 
   const loadPresets = async () => {
@@ -92,6 +97,27 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadPartners = async () => {
+    setPartnerLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('partners')
+        .select('*')
+        .order('partner_name', { ascending: true });
+
+      if (error) throw error;
+
+      setPartners((data || []) as PartnerRecord[]);
+    } catch (error) {
+      console.error('Error loading partners:', error);
+      setPartners([]);
+    } finally {
+      setPartnerLoading(false);
+    }
+  };
+
+  const partnerOptions: PartnerOption[] = partners.map(normalizePartnerOption);
+
   const handlePresetCreated = (newPreset: SubscriptionPreset) => {
     setPresets((prev) => [newPreset, ...prev]);
   };
@@ -141,6 +167,7 @@ export default function AdminDashboard() {
           <div className="flex flex-wrap gap-2 py-3">
             {[
               { id: 'presets', label: '공식 프리셋 관리' },
+              { id: 'partners', label: '파트너사 관리' },
               { id: 'mobile-products', label: '상품 관리' },
               { id: 'mobile-display', label: '추천 노출 관리' },
               { id: 'banners', label: '배너 관리' },
@@ -195,8 +222,17 @@ export default function AdminDashboard() {
         {activeTab === 'mobile-products' && (
           <MobileProductManager
             products={mobileProducts}
+            partners={partnerOptions}
             loading={mobileLoading}
             onReload={loadMobileProducts}
+          />
+        )}
+
+        {activeTab === 'partners' && (
+          <PartnerManager
+            partners={partners}
+            loading={partnerLoading}
+            onReload={loadPartners}
           />
         )}
 

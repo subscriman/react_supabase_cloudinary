@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { PartnerOption, formatPartnerLabel } from '../lib/partners';
 import {
   BenefitTrackerDisplayMode,
   Carrier,
@@ -22,6 +23,7 @@ type SubProductType = SeedSubProduct['type'];
 
 interface MobileProductManagerProps {
   products: ManagedSeedPreset[];
+  partners: PartnerOption[];
   loading: boolean;
   onReload: () => Promise<void>;
 }
@@ -34,6 +36,7 @@ interface ProductDraft {
   description: string;
   productType: EditableProductType;
   carrier: Carrier;
+  partnerId: string;
   mobileCategory: MobileCatalogCategory;
   mobileEnabled: boolean;
   photos: string[];
@@ -175,6 +178,7 @@ function createEmptyDraft(): ProductDraft {
     description: '',
     productType: 'A',
     carrier: 'general',
+    partnerId: '',
     mobileCategory: 'ott',
     mobileEnabled: true,
     photos: [''],
@@ -246,6 +250,7 @@ function toDraft(preset: SeedPreset & Partial<ManagedSeedPreset>): ProductDraft 
     description: preset.description,
     productType: (meta.productType || 'A') as EditableProductType,
     carrier: meta.carrier || 'general',
+    partnerId: meta.partnerId || '',
     mobileCategory: meta.mobileCategory || 'ott',
     mobileEnabled: meta.mobileEnabled ?? meta.defaultEnabled ?? true,
     photos: ensureAtLeastOne([...(meta.photos || [])]),
@@ -338,7 +343,9 @@ function toSeedPreset(draft: ProductDraft): SeedPreset {
 
   const meta = {
     seedKey: draft.seedKey || slugifySeedKey(`${draft.name}-${draft.productType}`),
+    partnerId: draft.partnerId || null,
     carrier: draft.carrier,
+    partnerName: null,
     catalogKind: 'subscription' as const,
     productType: draft.productType,
     mobileCategory: draft.mobileCategory,
@@ -420,6 +427,7 @@ function updateStringArray(
 
 export default function MobileProductManager({
   products,
+  partners,
   loading,
   onReload,
 }: MobileProductManagerProps) {
@@ -456,10 +464,17 @@ export default function MobileProductManager({
     setSaving(true);
 
     try {
+      const selectedPartner =
+        partners.find((partner) => partner.id === draft.partnerId) || null;
       const nextPreset = toSeedPreset({
         ...draft,
         seedKey: draft.seedKey || slugifySeedKey(`${draft.name}-${draft.productType}`),
+        partnerId: selectedPartner?.id || '',
       });
+      if (nextPreset.template.seedMeta) {
+        nextPreset.template.seedMeta.partnerId = selectedPartner?.id || null;
+        nextPreset.template.seedMeta.partnerName = selectedPartner?.partnerName || null;
+      }
       const payload = buildSubscriptionPresetRowInput(nextPreset);
 
       if (draft.dbId) {
@@ -596,6 +611,15 @@ export default function MobileProductManager({
                         >
                           {product.provider}
                         </p>
+                        {meta.partnerName ? (
+                          <p
+                            className={`mt-1 text-[11px] ${
+                              isSelected ? 'text-white/65' : 'text-slate-400'
+                            }`}
+                          >
+                            파트너: {meta.partnerName}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex flex-col items-end gap-2 text-[11px]">
                         <span className="rounded-full border border-current/20 px-2 py-1">
@@ -737,7 +761,7 @@ export default function MobileProductManager({
             </div>
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr),minmax(0,1fr),180px]">
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">통신사</label>
               <select
@@ -753,6 +777,28 @@ export default function MobileProductManager({
                 {carrierOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                파트너사
+              </label>
+              <select
+                value={draft.partnerId}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    partnerId: event.target.value,
+                  }))
+                }
+                className={inputClassName}
+              >
+                <option value="">선택 안 함</option>
+                {partners.map((partner) => (
+                  <option key={partner.id} value={partner.id}>
+                    {formatPartnerLabel(partner)}
                   </option>
                 ))}
               </select>
