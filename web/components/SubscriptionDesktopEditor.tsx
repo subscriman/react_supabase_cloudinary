@@ -171,7 +171,7 @@ export default function SubscriptionDesktopEditor({
   onSaveDraft,
 }: SubscriptionDesktopEditorProps) {
   return (
-    <div className="hidden space-y-6 lg:block">
+    <div className="space-y-6">
       {statusMessage ? (
         <div className="rounded-2xl bg-[rgba(42,157,143,0.10)] px-4 py-3 text-sm text-slate-700">
           {statusMessage}
