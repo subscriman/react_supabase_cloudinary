@@ -2,20 +2,33 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SubscriptionPreset } from '../../shared/types';
 import { supabase } from '../lib/supabase';
+import {
+  ManagedSeedPreset,
+  normalizePresetRowToManagedSeedPreset,
+} from '../lib/user-membership';
 import BannerManager from './BannerManager';
+import MobileDisplayManager from './MobileDisplayManager';
+import MobileProductManager from './MobileProductManager';
 import PresetForm from './PresetForm';
 import PresetList from './PresetList';
 import UserPresetList from './UserPresetList';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<
-    'presets' | 'banners' | 'user-presets' | 'analytics'
+    | 'presets'
+    | 'mobile-products'
+    | 'mobile-display'
+    | 'banners'
+    | 'user-presets'
+    | 'analytics'
   >('presets');
   const [presets, setPresets] = useState<SubscriptionPreset[]>([]);
+  const [mobileProducts, setMobileProducts] = useState<ManagedSeedPreset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileLoading, setMobileLoading] = useState(true);
 
   useEffect(() => {
-    loadPresets();
+    void Promise.all([loadPresets(), loadMobileProducts()]);
   }, []);
 
   const loadPresets = async () => {
@@ -40,13 +53,42 @@ export default function AdminDashboard() {
           createdBy: preset.created_by,
           createdAt: preset.created_at,
           updatedAt: preset.updated_at,
-        })) || [];
+        }))
+          .filter((preset) => {
+            const seedMeta = preset.template?.seedMeta || {};
+            return (seedMeta.catalogKind || 'telecom') !== 'subscription';
+          }) || [];
 
       setPresets(processedData);
     } catch (error) {
       console.error('Error loading presets:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMobileProducts = async () => {
+    setMobileLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('subscription_presets')
+        .select('*')
+        .eq('is_official', true)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      const processedData =
+        data
+          ?.map((preset) => normalizePresetRowToManagedSeedPreset(preset))
+          .filter((preset) => (preset.template.seedMeta?.catalogKind || 'telecom') === 'subscription') ||
+        [];
+
+      setMobileProducts(processedData);
+    } catch (error) {
+      console.error('Error loading mobile products:', error);
+    } finally {
+      setMobileLoading(false);
     }
   };
 
@@ -77,12 +119,20 @@ export default function AdminDashboard() {
             </h1>
           </div>
 
-          <Link
-            href="/"
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[var(--brand-coral)] hover:text-[var(--brand-coral)]"
-          >
-            사용자 페이지로 이동
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[var(--brand-coral)] hover:text-[var(--brand-coral)]"
+            >
+              사용자 페이지로 이동
+            </Link>
+            <Link
+              href="/m"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[var(--brand-coral)] hover:text-[var(--brand-coral)]"
+            >
+              모바일 페이지 보기
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -91,6 +141,8 @@ export default function AdminDashboard() {
           <div className="flex flex-wrap gap-2 py-3">
             {[
               { id: 'presets', label: '공식 프리셋 관리' },
+              { id: 'mobile-products', label: '상품 관리' },
+              { id: 'mobile-display', label: '추천 노출 관리' },
               { id: 'banners', label: '배너 관리' },
               { id: 'user-presets', label: '사용자 프리셋' },
               { id: 'analytics', label: '통계' },
@@ -138,6 +190,22 @@ export default function AdminDashboard() {
             <h2 className="mb-4 text-lg font-semibold text-slate-900">배너 관리</h2>
             <BannerManager />
           </section>
+        )}
+
+        {activeTab === 'mobile-products' && (
+          <MobileProductManager
+            products={mobileProducts}
+            loading={mobileLoading}
+            onReload={loadMobileProducts}
+          />
+        )}
+
+        {activeTab === 'mobile-display' && (
+          <MobileDisplayManager
+            products={mobileProducts}
+            loading={mobileLoading}
+            onReload={loadMobileProducts}
+          />
         )}
 
         {activeTab === 'user-presets' && (

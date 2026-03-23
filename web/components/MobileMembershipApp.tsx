@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { supabase } from '../lib/supabase';
 import {
   PaymentCycle,
   PaymentMethodType,
@@ -10,7 +11,9 @@ import {
   UserMembershipConfig,
   buildCatalogPresets,
   createDraftFromSeedPreset,
+  getMobileCategoryKey,
   loadSavedMembershipConfigs,
+  normalizePresetRowToManagedSeedPreset,
   normalizePhotos,
   persistMembershipConfigs,
 } from '../lib/user-membership';
@@ -167,52 +170,6 @@ function buildRuleSummary(
   return parts.join(', ') || '조건 확인 필요';
 }
 
-function getCategoryKey(item: {
-  displayName?: string;
-  name?: string;
-  provider?: string;
-  carrier?: string;
-  sourceUrls?: string[];
-}) {
-  const text = `${item.displayName || item.name || ''} ${item.provider || ''}`.toLowerCase();
-  const sourceText = (item.sourceUrls || []).join(' ').toLowerCase();
-
-  if (
-    text.includes('넷플릭스') ||
-    text.includes('netflix') ||
-    text.includes('웨이브') ||
-    text.includes('wavve') ||
-    text.includes('티빙') ||
-    text.includes('tving')
-  ) {
-    return 'ott' as const;
-  }
-
-  if (
-    text.includes('배민') ||
-    text.includes('배달') ||
-    text.includes('요기요')
-  ) {
-    return 'delivery' as const;
-  }
-
-  if (text.includes('우주') || sourceText.includes('sktuniverse.co.kr')) {
-    return 't-universe' as const;
-  }
-
-  if (
-    item.carrier === 'kt' ||
-    item.carrier === 'skt' ||
-    item.carrier === 'lguplus' ||
-    text.includes('멤버십') ||
-    text.includes('vip')
-  ) {
-    return 'telecom' as const;
-  }
-
-  return 'all' as const;
-}
-
 function getPreviewImage(
   preset: SeedPreset | null,
   config?: UserMembershipConfig | null
@@ -223,6 +180,20 @@ function getPreviewImage(
 }
 
 function getFeaturedPresets(presets: SeedPreset[]) {
+  const configured = [...presets]
+    .filter((preset) => preset.template.seedMeta?.homeFeatured)
+    .sort((left, right) => {
+      const leftOrder = left.template.seedMeta?.homeFeaturedOrder ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder =
+        right.template.seedMeta?.homeFeaturedOrder ?? Number.MAX_SAFE_INTEGER;
+
+      return leftOrder - rightOrder || left.name.localeCompare(right.name, 'ko-KR');
+    });
+
+  if (configured.length) {
+    return configured;
+  }
+
   const preferredKeys = [
     'sample-netflix-type-a',
     'sample-olive-young-calendar-type-d',
@@ -235,6 +206,37 @@ function getFeaturedPresets(presets: SeedPreset[]) {
     .filter(Boolean) as SeedPreset[];
 
   return mapped.length ? mapped : presets.slice(0, 4);
+}
+
+function getRecommendedPresets(presets: SeedPreset[]) {
+  const configured = [...presets]
+    .filter((preset) => preset.template.seedMeta?.recommendVisible)
+    .sort((left, right) => {
+      const leftOrder = left.template.seedMeta?.recommendOrder ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder =
+        right.template.seedMeta?.recommendOrder ?? Number.MAX_SAFE_INTEGER;
+
+      return leftOrder - rightOrder || left.name.localeCompare(right.name, 'ko-KR');
+    });
+
+  if (configured.length) {
+    return configured;
+  }
+
+  const recommendedKeys = [
+    'sample-netflix-type-a',
+    'sample-tving-type-a',
+    'sample-kt-vip-choice-type-b',
+    'sample-t-universe-life-type-c',
+    'sample-olive-young-calendar-type-d',
+    'sample-wavve-type-a',
+  ];
+
+  const items = recommendedKeys
+    .map((key) => presets.find((preset) => preset.seedKey === key))
+    .filter(Boolean) as SeedPreset[];
+
+  return items.length ? items : presets.slice(0, 6);
 }
 
 function buildCalendarDays(year: number, month: number) {
@@ -1038,12 +1040,18 @@ function MobileDetailView({
 }
 
 export default function MobileMembershipApp({ seedData }: MobileMembershipAppProps) {
+  const [remoteProductPresets, setRemoteProductPresets] = useState<SeedPreset[]>([]);
   const presets = useMemo(
     () =>
-      buildCatalogPresets(seedData).filter(
-        (preset) => (preset.template.seedMeta?.catalogKind || 'telecom') === 'subscription'
-      ),
-    [seedData]
+      buildCatalogPresets(seedData, remoteProductPresets).filter((preset) => {
+        const seedMeta = preset.template.seedMeta || {};
+
+        return (
+          (seedMeta.catalogKind || 'telecom') === 'subscription' &&
+          seedMeta.mobileEnabled !== false
+        );
+      }),
+    [remoteProductPresets, seedData]
   );
   const featuredPresets = useMemo(() => getFeaturedPresets(presets), [presets]);
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
@@ -1060,6 +1068,42 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadRemoteProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('subscription_presets')
+          .select('*')
+          .eq('is_official', true)
+          .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+
+        const nextPresets =
+          data
+            ?.map((row) => normalizePresetRowToManagedSeedPreset(row))
+            .filter(
+              (preset) =>
+                (preset.template.seedMeta?.catalogKind || 'telecom') === 'subscription'
+            ) || [];
+
+        if (isMounted) {
+          setRemoteProductPresets(nextPresets);
+        }
+      } catch (error) {
+        console.error('Failed to load mobile products:', error);
+      }
+    };
+
+    void loadRemoteProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!statusMessage) return;
 
     const timeoutId = window.setTimeout(() => {
@@ -1068,6 +1112,14 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
 
     return () => window.clearTimeout(timeoutId);
   }, [statusMessage]);
+
+  useEffect(() => {
+    if (featuredIndex < featuredPresets.length) {
+      return;
+    }
+
+    setFeaturedIndex(0);
+  }, [featuredIndex, featuredPresets.length]);
 
   const homeSections = useMemo(() => {
     const sectionOrder: Array<{ id: HomeCategoryId; title: string }> = [
@@ -1081,11 +1133,12 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
       .map((section) => ({
         ...section,
         items: presets.filter((preset) => {
-          const category = getCategoryKey({
+          const category = getMobileCategoryKey({
             name: preset.name,
             provider: preset.provider,
             carrier: preset.template.seedMeta?.carrier,
             sourceUrls: preset.template.seedMeta?.sourceUrls,
+            mobileCategory: preset.template.seedMeta?.mobileCategory,
           });
           return category === section.id;
         }),
@@ -1094,20 +1147,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
   }, [presets]);
 
   const recommendedPresets = useMemo(() => {
-    const recommendedKeys = [
-      'sample-netflix-type-a',
-      'sample-tving-type-a',
-      'sample-kt-vip-choice-type-b',
-      'sample-t-universe-life-type-c',
-      'sample-olive-young-calendar-type-d',
-      'sample-wavve-type-a',
-    ];
-
-    const items = recommendedKeys
-      .map((key) => presets.find((preset) => preset.seedKey === key))
-      .filter(Boolean) as SeedPreset[];
-
-    return items.length ? items : presets.slice(0, 6);
+    return getRecommendedPresets(presets);
   }, [presets]);
 
   const filteredSavedConfigs = useMemo(() => {
@@ -1116,11 +1156,12 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
     }
 
     return savedConfigs.filter((config) => {
-      const category = getCategoryKey({
+      const category = getMobileCategoryKey({
         displayName: config.displayName,
         provider: config.provider,
         carrier: config.carrier,
         sourceUrls: config.sourceUrls,
+        mobileCategory: config.mobileCategory,
       });
       return category === activeFilter;
     });

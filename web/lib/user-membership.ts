@@ -1,6 +1,7 @@
 export type Carrier = 'kt' | 'skt' | 'lguplus' | 'general';
 export type ProductType = 'A' | 'B' | 'C' | 'D' | 'telecom';
 export type CatalogKind = 'subscription' | 'telecom';
+export type MobileCatalogCategory = 'ott' | 'delivery' | 'telecom' | 't-universe';
 export type ReminderRepeatUnit =
   | 'day'
   | 'week'
@@ -47,6 +48,7 @@ export interface BenefitTrackerSeed {
 }
 
 export interface SeedMeta {
+  seedKey?: string;
   carrier?: Carrier;
   membershipGrade?: string;
   presetType?: string;
@@ -83,6 +85,12 @@ export interface SeedMeta {
   usageOverflowMessage?: string;
   usageCycleAmountLimit?: number | null;
   benefitTrackers?: BenefitTrackerSeed[];
+  mobileCategory?: MobileCatalogCategory;
+  mobileEnabled?: boolean;
+  homeFeatured?: boolean;
+  homeFeaturedOrder?: number | null;
+  recommendVisible?: boolean;
+  recommendOrder?: number | null;
 }
 
 export interface SeedPreset {
@@ -119,6 +127,26 @@ export interface SeedData {
   presets: SeedPreset[];
 }
 
+export interface SubscriptionPresetRow {
+  id: string;
+  name: string;
+  provider: string;
+  description: string | null;
+  is_official?: boolean | null;
+  created_by?: string | null;
+  likes?: number | null;
+  downloads?: number | null;
+  template: unknown;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ManagedSeedPreset extends SeedPreset {
+  dbId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UsageEntry {
   id: string;
   checkedAt: string;
@@ -142,6 +170,7 @@ export interface UserMembershipConfig {
   id: string;
   seedKey: string;
   carrier: Carrier;
+  mobileCategory?: MobileCatalogCategory;
   provider: string;
   catalogKind: CatalogKind;
   productType: ProductType;
@@ -193,9 +222,17 @@ export interface UserMembershipConfig {
 const LEGACY_STORAGE_KEY = 'subscriman:user-membership-presets:v1';
 export const USER_MEMBERSHIP_STORAGE_KEY = 'subscriman:user-membership-presets:v2';
 
-export function buildCatalogPresets(seedData: SeedData): SeedPreset[] {
+export function buildCatalogPresets(
+  seedData: SeedData,
+  subscriptionOverrides: SeedPreset[] = []
+): SeedPreset[] {
+  const subscriptionPresets = mergeSeedPresets(
+    buildSampleProductPresets(),
+    subscriptionOverrides
+  );
+
   return [
-    ...buildSampleProductPresets(),
+    ...subscriptionPresets,
     ...seedData.presets.map<SeedPreset>((preset) => ({
       ...preset,
       template: {
@@ -211,6 +248,163 @@ export function buildCatalogPresets(seedData: SeedData): SeedPreset[] {
   ];
 }
 
+export function getSubscriptionSamplePresets(): SeedPreset[] {
+  return buildSampleProductPresets();
+}
+
+export function normalizePresetRowToManagedSeedPreset(
+  row: SubscriptionPresetRow
+): ManagedSeedPreset {
+  const template =
+    typeof row.template === 'string'
+      ? (JSON.parse(row.template) as SeedPreset['template'])
+      : ((row.template || {}) as SeedPreset['template']);
+  const seedMeta = {
+    ...(template.seedMeta || {}),
+  };
+  const seedKey = seedMeta.seedKey || `mobile-${row.id}`;
+
+  return {
+    dbId: row.id,
+    createdAt: row.created_at || '',
+    updatedAt: row.updated_at || '',
+    seedKey,
+    name: row.name,
+    provider: row.provider,
+    description: row.description || '',
+    isOfficial: row.is_official ?? true,
+    createdBy: row.created_by || 'admin',
+    likes: row.likes ?? 0,
+    downloads: row.downloads ?? 0,
+    template: {
+      subscription: {
+        name: template.subscription?.name || row.name,
+        provider: template.subscription?.provider || row.provider,
+        isActive: template.subscription?.isActive ?? true,
+        subProducts: Array.isArray(template.subscription?.subProducts)
+          ? template.subscription.subProducts
+          : [],
+      },
+      subProducts: cloneSubProducts(
+        Array.isArray(template.subProducts) ? template.subProducts : []
+      ),
+      seedMeta: {
+        ...seedMeta,
+        seedKey,
+        catalogKind: 'subscription',
+        productType: seedMeta.productType || 'A',
+        photos: normalizePhotos(seedMeta.photos || []),
+        sourceUrls: Array.isArray(seedMeta.sourceUrls) ? seedMeta.sourceUrls : [],
+        mobileEnabled: seedMeta.mobileEnabled ?? true,
+        homeFeatured: seedMeta.homeFeatured ?? false,
+        homeFeaturedOrder: seedMeta.homeFeaturedOrder ?? null,
+        recommendVisible: seedMeta.recommendVisible ?? false,
+        recommendOrder: seedMeta.recommendOrder ?? null,
+        benefitTrackers: cloneBenefitTrackers(seedMeta.benefitTrackers || []),
+      },
+    },
+  };
+}
+
+export function buildSubscriptionPresetRowInput(preset: SeedPreset) {
+  const seedMeta = preset.template.seedMeta || {};
+
+  return {
+    name: preset.name,
+    provider: preset.provider,
+    description: preset.description,
+    is_official: preset.isOfficial,
+    template: {
+      subscription: {
+        name: preset.template.subscription.name,
+        provider: preset.template.subscription.provider,
+        isActive: preset.template.subscription.isActive,
+        subProducts: preset.template.subscription.subProducts,
+      },
+      subProducts: cloneSubProducts(preset.template.subProducts || []),
+      seedMeta: {
+        ...seedMeta,
+        seedKey: preset.seedKey,
+        catalogKind: 'subscription' as CatalogKind,
+        photos: normalizePhotos(seedMeta.photos || []),
+        sourceUrls: Array.isArray(seedMeta.sourceUrls) ? seedMeta.sourceUrls : [],
+        benefitTrackers:
+          seedMeta.productType === 'C'
+            ? (seedMeta.benefitTrackers || []).map((tracker) => ({
+                ...tracker,
+                photos: normalizePhotos(tracker.photos || []),
+              }))
+            : [],
+      },
+    },
+  };
+}
+
+export function isMobileSubscriptionPreset(preset: SeedPreset) {
+  return (preset.template.seedMeta?.catalogKind || 'telecom') === 'subscription';
+}
+
+export function getMobileCategoryKey(input: {
+  displayName?: string;
+  name?: string;
+  provider?: string;
+  carrier?: string;
+  sourceUrls?: string[];
+  mobileCategory?: MobileCatalogCategory;
+}) {
+  if (input.mobileCategory) {
+    return input.mobileCategory;
+  }
+
+  const text = `${input.displayName || input.name || ''} ${input.provider || ''}`.toLowerCase();
+  const sourceText = (input.sourceUrls || []).join(' ').toLowerCase();
+
+  if (
+    text.includes('넷플릭스') ||
+    text.includes('netflix') ||
+    text.includes('웨이브') ||
+    text.includes('wavve') ||
+    text.includes('티빙') ||
+    text.includes('tving')
+  ) {
+    return 'ott' as const;
+  }
+
+  if (text.includes('배민') || text.includes('배달') || text.includes('요기요')) {
+    return 'delivery' as const;
+  }
+
+  if (text.includes('우주') || sourceText.includes('sktuniverse.co.kr')) {
+    return 't-universe' as const;
+  }
+
+  if (
+    input.carrier === 'kt' ||
+    input.carrier === 'skt' ||
+    input.carrier === 'lguplus' ||
+    text.includes('멤버십') ||
+    text.includes('vip')
+  ) {
+    return 'telecom' as const;
+  }
+
+  return 'ott' as const;
+}
+
+function mergeSeedPresets(basePresets: SeedPreset[], overridePresets: SeedPreset[]) {
+  const map = new Map<string, SeedPreset>();
+
+  basePresets.forEach((preset) => {
+    map.set(preset.seedKey, preset);
+  });
+
+  overridePresets.forEach((preset) => {
+    map.set(preset.seedKey, preset);
+  });
+
+  return Array.from(map.values());
+}
+
 export function createDraftFromSeedPreset(preset: SeedPreset): UserMembershipConfig {
   const meta = preset.template.seedMeta || {};
   const now = new Date().toISOString();
@@ -219,6 +413,7 @@ export function createDraftFromSeedPreset(preset: SeedPreset): UserMembershipCon
     id: `draft-${preset.seedKey}-${Date.now()}`,
     seedKey: preset.seedKey,
     carrier: meta.carrier || inferCarrierFromProvider(preset.provider),
+    mobileCategory: meta.mobileCategory,
     provider: preset.provider,
     catalogKind: meta.catalogKind || 'telecom',
     productType: meta.productType || 'telecom',
@@ -355,6 +550,7 @@ function normalizeSavedConfig(config: UserMembershipConfig): UserMembershipConfi
   return {
     ...config,
     carrier: config.carrier || 'general',
+    mobileCategory: config.mobileCategory,
     catalogKind: config.catalogKind || 'telecom',
     productType: config.productType || 'telecom',
     userMemo: config.userMemo || '',
@@ -423,6 +619,7 @@ function migrateLegacyConfig(value: unknown): UserMembershipConfig | null {
     id: legacy.id || `migrated-${Date.now()}`,
     seedKey: legacy.seedKey || 'legacy',
     carrier: legacy.carrier || inferCarrierFromProvider(legacy.provider || ''),
+    mobileCategory: undefined,
     provider: legacy.provider || '',
     catalogKind: 'telecom',
     productType: 'telecom',
