@@ -22,6 +22,13 @@ interface MobileMembershipAppProps {
   seedData: SeedData;
 }
 
+type HomeCategoryId = Exclude<MobileFilter, 'all'>;
+
+interface CategoryViewState {
+  id: HomeCategoryId;
+  title: string;
+}
+
 interface DetailState {
   draft: UserMembershipConfig;
   preset: SeedPreset | null;
@@ -1043,6 +1050,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
   const [savedConfigs, setSavedConfigs] = useState<UserMembershipConfig[]>([]);
   const [activeFilter, setActiveFilter] = useState<MobileFilter>('all');
   const [detail, setDetail] = useState<DetailState | null>(null);
+  const [categoryView, setCategoryView] = useState<CategoryViewState | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -1062,7 +1070,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
   }, [statusMessage]);
 
   const homeSections = useMemo(() => {
-    const sectionOrder: Array<{ id: MobileFilter; title: string }> = [
+    const sectionOrder: Array<{ id: HomeCategoryId; title: string }> = [
       { id: 'ott', title: 'OTT 스트리밍' },
       { id: 'delivery', title: '배달' },
       { id: 'telecom', title: '통신사 & 혜택' },
@@ -1118,6 +1126,11 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
     });
   }, [activeFilter, savedConfigs]);
 
+  const activeCategorySection = useMemo(() => {
+    if (!categoryView) return null;
+    return homeSections.find((section) => section.id === categoryView.id) || null;
+  }, [categoryView, homeSections]);
+
   const openPresetDetail = (preset: SeedPreset) => {
     setDetail({
       draft: createDraftFromSeedPreset(preset),
@@ -1127,6 +1140,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
   };
 
   const openSavedDetail = (config: UserMembershipConfig) => {
+    setCategoryView(null);
     setDetail({
       draft: cloneConfig(config),
       preset: presets.find((preset) => preset.seedKey === config.seedKey) || null,
@@ -1400,6 +1414,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
       isExisting ? '내 구독 항목을 수정했습니다.' : '내 구독에 저장했습니다.'
     );
     setActiveTab('saved');
+    setCategoryView(null);
     setDetail(null);
   };
 
@@ -1454,15 +1469,31 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
           />
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto pb-28">
-            <div className="border-b border-slate-400 bg-[#8d8d8d] px-4 py-4 text-center text-2xl font-medium text-white">
-              {activeTab === 'home'
-                ? '구독관리'
-                : activeTab === 'recommend'
-                  ? '추천'
-                  : activeTab === 'saved'
-                    ? '내 구독 상품'
-                    : '설정'}
-            </div>
+            {categoryView ? (
+              <div className="border-b border-slate-400 bg-[#8d8d8d] px-4 py-3 text-white">
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryView(null)}
+                    className="text-lg leading-none"
+                  >
+                    ←
+                  </button>
+                  <p className="text-lg font-medium">{categoryView.title}</p>
+                  <span className="w-5" />
+                </div>
+              </div>
+            ) : (
+              <div className="border-b border-slate-400 bg-[#8d8d8d] px-4 py-4 text-center text-2xl font-medium text-white">
+                {activeTab === 'home'
+                  ? '구독관리'
+                  : activeTab === 'recommend'
+                    ? '추천'
+                    : activeTab === 'saved'
+                      ? '내 구독 상품'
+                      : '설정'}
+              </div>
+            )}
 
             {statusMessage ? (
               <div className="px-4 pt-4">
@@ -1472,7 +1503,25 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
               </div>
             ) : null}
 
-            {activeTab === 'home' ? (
+            {categoryView ? (
+              <div className="space-y-5 px-4 py-5">
+                <div className="rounded-[24px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600">
+                  {activeCategorySection
+                    ? `${activeCategorySection.title} 카테고리 상품 ${activeCategorySection.items.length}개`
+                    : '선택한 카테고리 상품을 불러오는 중입니다.'}
+                </div>
+
+                {activeCategorySection?.items.length ? (
+                  activeCategorySection.items.map((preset) => renderPreviewCard(preset, true))
+                ) : (
+                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-white px-5 py-10 text-center text-sm text-slate-500">
+                    이 카테고리에 표시할 상품이 아직 없습니다.
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {activeTab === 'home' && !categoryView ? (
               <div className="space-y-8 px-4 py-5">
                 <section>
                   <div
@@ -1544,10 +1593,12 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                       </h2>
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveTab('recommend');
-                          setStatusMessage(`${section.title} 추천 목록을 확인해보세요.`);
-                        }}
+                        onClick={() =>
+                          setCategoryView({
+                            id: section.id,
+                            title: section.title,
+                          })
+                        }
                         className="text-sm text-slate-500"
                       >
                         전체 보기
@@ -1692,11 +1743,12 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
               <button
                 key={item.id}
                 type="button"
-                onClick={() => {
-                  setDetail(null);
-                  setActiveTab(item.id);
-                }}
-                className={`px-2 py-4 text-base font-medium transition ${
+                    onClick={() => {
+                      setDetail(null);
+                      setCategoryView(null);
+                      setActiveTab(item.id);
+                    }}
+                    className={`px-2 py-4 text-base font-medium transition ${
                   isActive ? 'bg-[#d8d8d8] text-slate-900' : 'text-slate-700'
                 }`}
               >
