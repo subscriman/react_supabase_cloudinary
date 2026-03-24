@@ -68,7 +68,7 @@ const mobileNavItems: Array<{ id: MobileTab; label: string }> = [
 ];
 
 const inputClassName =
-  'w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-500';
+  'w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[var(--m-primary-02)] focus:ring-4 focus:ring-[rgba(255,56,92,0.12)]';
 
 function cloneConfig(config: UserMembershipConfig): UserMembershipConfig {
   return {
@@ -405,9 +405,9 @@ function MobileCalendarPanel({
               onClick={() => handleSelectDate(dateKey)}
               className={`relative h-9 rounded-full text-sm transition ${
                 isSelected
-                  ? 'bg-slate-900 text-white'
+                  ? 'bg-[var(--m-primary-02)] text-white'
                   : hasRecords
-                    ? 'bg-[rgba(148,163,184,0.18)] text-slate-900'
+                    ? 'bg-[var(--m-accent-01)] text-slate-900'
                     : 'text-slate-600'
               }`}
             >
@@ -565,7 +565,7 @@ function MobileDetailView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-slate-400 bg-[#8d8d8d] px-4 py-3 text-white">
+      <div className="border-b border-slate-400 bg-[var(--m-shade-02)] px-4 py-3 text-white">
         <div className="flex items-center justify-between">
           <button type="button" onClick={onBack} className="text-lg leading-none">
             ←
@@ -575,11 +575,11 @@ function MobileDetailView({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#f6f4ef] px-4 pb-28 pt-4">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--m-neutral-01)] px-4 pb-28 pt-4">
         <div className="space-y-4">
           <section className="rounded-[26px] border border-slate-300 bg-white p-4">
             <div className="grid grid-cols-[92px,minmax(0,1fr)] gap-4">
-              <div className="flex h-24 items-center justify-center overflow-hidden rounded-[22px] border border-slate-300 bg-[#f4f4f2] text-xs text-slate-500">
+              <div className="flex h-24 items-center justify-center overflow-hidden rounded-[22px] border border-slate-300 bg-[var(--m-neutral-01)] text-xs text-slate-500">
                 {previewImage ? (
                   <img
                     src={previewImage}
@@ -621,7 +621,7 @@ function MobileDetailView({
                     href={url}
                     target="_blank"
                     rel="noreferrer"
-                    className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700"
+                    className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-[var(--m-link)]"
                   >
                     {url}
                   </a>
@@ -701,7 +701,7 @@ function MobileDetailView({
                           className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
                         >
                           <span>{formatDateTime(entry.checkedAt)}</span>
-                          <span className="text-red-500">삭제</span>
+                          <span className="text-[var(--m-error-02)]">삭제</span>
                         </button>
                       ))}
                     </div>
@@ -878,7 +878,7 @@ function MobileDetailView({
 
                     onSaveCalendarEntry(selectedCalendarDateKey, calendarNoteDraft);
                   }}
-                  className="mt-3 w-full rounded-[20px] bg-slate-900 px-4 py-3 text-sm font-medium text-white"
+                  className="mt-3 w-full rounded-[20px] bg-[var(--m-primary-02)] px-4 py-3 text-sm font-medium text-white"
                 >
                   저장
                 </button>
@@ -913,7 +913,7 @@ function MobileDetailView({
             <div className="mt-4 grid grid-cols-3 gap-3">
               {draft.photos.map((photo, index) => (
                 <div key={`${draft.id}-mobile-photo-${index}`}>
-                  <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[20px] border border-slate-300 bg-[#f4f4f2] text-xs text-slate-500">
+                  <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[20px] border border-slate-300 bg-[var(--m-neutral-01)] text-xs text-slate-500">
                     {photo ? (
                       <img
                         src={photo}
@@ -1033,7 +1033,7 @@ function MobileDetailView({
             <button
               type="button"
               onClick={onSave}
-              className="rounded-[22px] bg-slate-900 px-4 py-3 text-sm font-medium text-white"
+              className="rounded-[22px] bg-[var(--m-primary-02)] px-4 py-3 text-sm font-medium text-white"
             >
               {detail.source === 'saved' ? '수정 저장' : '개인 설정 저장'}
             </button>
@@ -1614,7 +1614,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
           {preset.name}
         </p>
         <p className="mt-1 text-lg text-slate-600">{preset.description}</p>
-        <div className="mt-5 flex min-h-[140px] items-center justify-center overflow-hidden rounded-[24px] border border-slate-300 bg-[#f4f4f2] text-center text-2xl text-slate-500">
+        <div className="mt-5 flex min-h-[140px] items-center justify-center overflow-hidden rounded-[24px] border border-slate-300 bg-[var(--m-neutral-01)] text-center text-2xl text-slate-500">
           {image ? (
             <img src={image} alt={preset.name} className="h-full w-full object-cover" />
           ) : (
@@ -1630,8 +1630,8 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
   };
 
   return (
-    <div className="min-h-screen bg-[#ecebe7] py-0 text-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-[430px] flex-col overflow-hidden border-x border-slate-300 bg-[#f8f7f3] shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
+    <div className="mobile-theme min-h-screen bg-[var(--m-neutral-02)] py-0 text-slate-900">
+      <div className="mx-auto flex min-h-screen max-w-[430px] flex-col overflow-hidden border-x border-slate-300 bg-[var(--m-neutral-01)] shadow-[0_24px_80px_rgba(34,34,34,0.14)]">
         {detail ? (
           <MobileDetailView
             detail={detail}
@@ -1650,7 +1650,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto pb-28">
             {categoryView ? (
-              <div className="border-b border-slate-400 bg-[#8d8d8d] px-4 py-3 text-white">
+              <div className="border-b border-slate-400 bg-[var(--m-shade-02)] px-4 py-3 text-white">
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
@@ -1664,7 +1664,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                 </div>
               </div>
             ) : (
-              <div className="border-b border-slate-400 bg-[#8d8d8d] px-4 py-4 text-center text-2xl font-medium text-white">
+              <div className="border-b border-slate-400 bg-[var(--m-shade-02)] px-4 py-4 text-center text-2xl font-medium text-white">
                 {activeTab === 'home'
                   ? '구독관리'
                   : activeTab === 'recommend'
@@ -1677,7 +1677,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
 
             {statusMessage ? (
               <div className="px-4 pt-4">
-                <div className="rounded-[20px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700">
+                <div className="rounded-[20px] border border-[var(--m-accent-01)] bg-[var(--m-error-01)] px-4 py-3 text-sm text-[var(--m-shade-02)]">
                   {statusMessage}
                 </div>
               </div>
@@ -1724,10 +1724,10 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                     <button
                       type="button"
                       onClick={() => openPresetDetail(featuredPresets[featuredIndex])}
-                      className="w-full rounded-[30px] border border-slate-300 bg-white p-4 text-left shadow-sm"
+                          className="w-full rounded-[30px] border border-slate-300 bg-white p-4 text-left shadow-sm"
                     >
                       <div className="grid grid-cols-[116px,minmax(0,1fr)] gap-4">
-                        <div className="flex h-28 items-center justify-center overflow-hidden rounded-[22px] border border-slate-300 bg-[#f4f4f2] text-sm text-slate-500">
+                        <div className="flex h-28 items-center justify-center overflow-hidden rounded-[22px] border border-slate-300 bg-[var(--m-neutral-01)] text-sm text-slate-500">
                           {getPreviewImage(featuredPresets[featuredIndex], null) ? (
                             <img
                               src={getPreviewImage(featuredPresets[featuredIndex], null)}
@@ -1757,7 +1757,9 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                         type="button"
                         onClick={() => setFeaturedIndex(index)}
                         className={`h-3 w-3 rounded-full ${
-                          featuredIndex === index ? 'bg-slate-700' : 'bg-slate-300'
+                          featuredIndex === index
+                            ? 'bg-[var(--m-primary-02)]'
+                            : 'bg-[var(--m-neutral-04)]'
                         }`}
                         aria-label={`${preset.name} 보기`}
                       />
@@ -1779,7 +1781,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                             title: section.title,
                           })
                         }
-                        className="text-sm text-slate-500"
+                        className="text-sm text-[var(--m-link)]"
                       >
                         전체 보기
                       </button>
@@ -1792,7 +1794,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                           onClick={() => openPresetDetail(preset)}
                           className="min-w-[164px] rounded-[26px] border border-slate-300 bg-white p-4 text-left shadow-sm"
                         >
-                          <div className="flex h-32 items-center justify-center rounded-[22px] border border-slate-300 bg-[#f4f4f2] text-lg font-medium text-slate-600">
+                          <div className="flex h-32 items-center justify-center rounded-[22px] border border-slate-300 bg-[var(--m-neutral-01)] text-lg font-medium text-slate-600">
                             {preset.name}
                           </div>
                         </button>
@@ -1819,7 +1821,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                       onClick={() => setActiveFilter(filter.id)}
                       className={`whitespace-nowrap rounded-2xl border px-4 py-2 text-sm transition ${
                         activeFilter === filter.id
-                          ? 'border-slate-700 bg-slate-700 text-white'
+                          ? 'border-[var(--m-primary-02)] bg-[var(--m-primary-02)] text-white'
                           : 'border-slate-300 bg-white text-slate-700'
                       }`}
                     >
@@ -1840,7 +1842,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                         onClick={() => openSavedDetail(config)}
                         className="flex w-full items-center gap-4 rounded-[24px] border border-slate-300 bg-white p-4 text-left shadow-sm"
                       >
-                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[18px] border border-slate-300 bg-[#f4f4f2] text-xs text-slate-500">
+                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[18px] border border-slate-300 bg-[var(--m-neutral-01)] text-xs text-slate-500">
                           {getPreviewImage(linkedPreset, config) ? (
                             <img
                               src={getPreviewImage(linkedPreset, config)}
@@ -1891,13 +1893,13 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                   <div className="mt-4 grid gap-3">
                     <Link
                       href="/"
-                      className="rounded-[20px] border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                      className="rounded-[20px] border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-[var(--m-link)]"
                     >
                       PC 버전 열기
                     </Link>
                     <Link
                       href="/admin"
-                      className="rounded-[20px] border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                      className="rounded-[20px] border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-[var(--m-link)]"
                     >
                       관리자 페이지 열기
                     </Link>
@@ -1929,7 +1931,9 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                       setActiveTab(item.id);
                     }}
                     className={`px-2 py-4 text-base font-medium transition ${
-                  isActive ? 'bg-[#d8d8d8] text-slate-900' : 'text-slate-700'
+                  isActive
+                    ? 'bg-[var(--m-accent-01)] text-[var(--m-primary-02)]'
+                    : 'text-slate-700'
                 }`}
               >
                 {item.label}
