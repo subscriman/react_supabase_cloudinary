@@ -30,6 +30,8 @@ interface DisplayDraft {
   recommendOrder: string;
 }
 
+type DisplayTarget = 'home' | 'recommend';
+
 function toDisplayDraft(
   product: ManagedSeedPreset,
   categories: MobileCategoryOption[]
@@ -69,6 +71,8 @@ export default function MobileDisplayManager({
   const [drafts, setDrafts] = useState<DisplayDraft[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [activeTarget, setActiveTarget] = useState<DisplayTarget>('home');
+  const [searchText, setSearchText] = useState('');
   const availableCategories = useMemo(
     () =>
       sortMobileCategories(
@@ -96,6 +100,70 @@ export default function MobileDisplayManager({
     () => drafts.filter((draft) => draft.recommendVisible).length,
     [drafts]
   );
+
+  const activeCount = activeTarget === 'home' ? featuredCount : recommendCount;
+
+  const visibleDrafts = useMemo(() => {
+    const normalizedSearch = searchText.trim().toLowerCase();
+
+    return drafts
+      .filter((draft) => {
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        const haystack =
+          `${draft.name} ${draft.provider} ${draft.productType} ${draft.categoryLabel}`.toLowerCase();
+        return haystack.includes(normalizedSearch);
+      })
+      .sort((left, right) => {
+        const leftSelected =
+          activeTarget === 'home' ? left.homeFeatured : left.recommendVisible;
+        const rightSelected =
+          activeTarget === 'home' ? right.homeFeatured : right.recommendVisible;
+
+        if (leftSelected !== rightSelected) {
+          return leftSelected ? -1 : 1;
+        }
+
+        const leftOrder = parseNullableNumber(
+          activeTarget === 'home' ? left.homeFeaturedOrder : left.recommendOrder
+        );
+        const rightOrder = parseNullableNumber(
+          activeTarget === 'home' ? right.homeFeaturedOrder : right.recommendOrder
+        );
+
+        return (
+          (leftOrder ?? Number.MAX_SAFE_INTEGER) -
+            (rightOrder ?? Number.MAX_SAFE_INTEGER) ||
+          left.name.localeCompare(right.name, 'ko-KR')
+        );
+      });
+  }, [activeTarget, drafts, searchText]);
+
+  const handleToggleTarget = (dbId: string, checked: boolean) => {
+    setDrafts((prev) =>
+      prev.map((item) =>
+        item.dbId === dbId
+          ? activeTarget === 'home'
+            ? { ...item, homeFeatured: checked }
+            : { ...item, recommendVisible: checked }
+          : item
+      )
+    );
+  };
+
+  const handleUpdateOrder = (dbId: string, value: string) => {
+    setDrafts((prev) =>
+      prev.map((item) =>
+        item.dbId === dbId
+          ? activeTarget === 'home'
+            ? { ...item, homeFeaturedOrder: value }
+            : { ...item, recommendOrder: value }
+          : item
+      )
+    );
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -176,18 +244,68 @@ export default function MobileDisplayManager({
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <div className="rounded-[24px] bg-slate-50 p-5">
-            <p className="text-sm font-medium text-slate-500">홈 추천 영역</p>
-            <p className="mt-2 text-3xl font-semibold text-slate-900">
+          <button
+            type="button"
+            onClick={() => setActiveTarget('home')}
+            className={`rounded-[24px] p-5 text-left transition ${
+              activeTarget === 'home'
+                ? 'border border-slate-900 bg-slate-900 text-white'
+                : 'bg-slate-50 text-slate-900'
+            }`}
+          >
+            <p
+              className={`text-sm font-medium ${
+                activeTarget === 'home' ? 'text-white/75' : 'text-slate-500'
+              }`}
+            >
+              홈 추천 영역
+            </p>
+            <p
+              className={`mt-2 text-3xl font-semibold ${
+                activeTarget === 'home' ? 'text-white' : 'text-slate-900'
+              }`}
+            >
               {featuredCount}개
             </p>
-          </div>
-          <div className="rounded-[24px] bg-slate-50 p-5">
-            <p className="text-sm font-medium text-slate-500">추천 탭 노출</p>
-            <p className="mt-2 text-3xl font-semibold text-slate-900">
+            <p
+              className={`mt-2 text-sm ${
+                activeTarget === 'home' ? 'text-white/70' : 'text-slate-500'
+              }`}
+            >
+              홈 상단 캐러셀에 노출할 상품을 선택합니다.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTarget('recommend')}
+            className={`rounded-[24px] p-5 text-left transition ${
+              activeTarget === 'recommend'
+                ? 'border border-slate-900 bg-slate-900 text-white'
+                : 'bg-slate-50 text-slate-900'
+            }`}
+          >
+            <p
+              className={`text-sm font-medium ${
+                activeTarget === 'recommend' ? 'text-white/75' : 'text-slate-500'
+              }`}
+            >
+              추천 탭 노출
+            </p>
+            <p
+              className={`mt-2 text-3xl font-semibold ${
+                activeTarget === 'recommend' ? 'text-white' : 'text-slate-900'
+              }`}
+            >
               {recommendCount}개
             </p>
-          </div>
+            <p
+              className={`mt-2 text-sm ${
+                activeTarget === 'recommend' ? 'text-white/70' : 'text-slate-500'
+              }`}
+            >
+              하단 메뉴의 추천 탭 목록에 보일 상품을 선택합니다.
+            </p>
+          </button>
         </div>
 
         {message ? (
@@ -199,130 +317,116 @@ export default function MobileDisplayManager({
 
       <section className="rounded-[28px] border border-white/60 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
         <div className="border-b border-slate-200 px-6 py-4">
-          <h3 className="text-lg font-semibold text-slate-900">상품별 추천 노출 설정</h3>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {activeTarget === 'home' ? '홈 추천 영역 상품 선택' : '추천 탭 상품 선택'}
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                먼저 대상을 고른 뒤, 아래 상품 목록에서 해당 영역에 노출할 상품을 지정합니다.
+              </p>
+            </div>
+            <div className="min-w-[220px] flex-1 md:max-w-xs">
+              <input
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none"
+                placeholder="상품명, 제공업체, 카테고리 검색"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[24px] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            현재 선택된 영역에 <strong className="text-slate-900">{activeCount}개</strong>가
+            지정되어 있습니다. 선택된 상품이 먼저 보이도록 정렬됩니다.
+          </div>
         </div>
 
         {loading ? (
           <div className="px-6 py-10 text-center text-sm text-slate-500">
             모바일 상품을 불러오는 중입니다.
           </div>
-        ) : drafts.length ? (
+        ) : visibleDrafts.length ? (
           <div className="divide-y divide-slate-100">
-            {drafts.map((draft) => (
-              <div
-                key={draft.dbId}
-                className="grid gap-5 px-6 py-5 xl:grid-cols-[minmax(0,1.2fr),minmax(0,1fr),minmax(0,1fr)]"
-              >
-                <div>
-                  <p className="text-lg font-semibold text-slate-900">{draft.name}</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {draft.provider} · 타입 {draft.productType} · {draft.categoryLabel}
-                  </p>
-                </div>
+            {visibleDrafts.map((draft) => {
+              const isSelected =
+                activeTarget === 'home' ? draft.homeFeatured : draft.recommendVisible;
+              const orderValue =
+                activeTarget === 'home' ? draft.homeFeaturedOrder : draft.recommendOrder;
 
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">홈 추천 영역</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        홈 상단 캐러셀에 들어갈 상품
-                      </p>
+              return (
+                <div
+                  key={draft.dbId}
+                  className="grid gap-5 px-6 py-5 xl:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]"
+                >
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{draft.name}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {draft.provider} · 타입 {draft.productType} · {draft.categoryLabel}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                      {draft.homeFeatured ? (
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">
+                          홈 추천 영역 지정됨
+                        </span>
+                      ) : null}
+                      {draft.recommendVisible ? (
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">
+                          추천 탭 지정됨
+                        </span>
+                      ) : null}
                     </div>
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={draft.homeFeatured}
-                        onChange={(event) =>
-                          setDrafts((prev) =>
-                            prev.map((item) =>
-                              item.dbId === draft.dbId
-                                ? { ...item, homeFeatured: event.target.checked }
-                                : item
-                            )
-                          )
-                        }
-                        className="h-4 w-4 accent-slate-900"
-                      />
-                      노출
-                    </label>
                   </div>
-                  <div className="mt-4">
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      노출 순서
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={draft.homeFeaturedOrder}
-                      onChange={(event) =>
-                        setDrafts((prev) =>
-                          prev.map((item) =>
-                            item.dbId === draft.dbId
-                              ? { ...item, homeFeaturedOrder: event.target.value }
-                              : item
-                          )
-                        )
-                      }
-                      className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none"
-                      placeholder="낮을수록 먼저 노출"
-                    />
-                  </div>
-                </div>
 
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">추천 탭</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        하단 메뉴의 추천 탭 목록에 표시
-                      </p>
+                  <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {activeTarget === 'home' ? '홈 추천 영역' : '추천 탭'}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {activeTarget === 'home'
+                            ? '홈 상단 캐러셀에 들어갈 상품'
+                            : '하단 메뉴의 추천 탭 목록에 표시할 상품'}
+                        </p>
+                      </div>
+                      <label className="flex items-center gap-2 text-sm text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(event) =>
+                            handleToggleTarget(draft.dbId, event.target.checked)
+                          }
+                          className="h-4 w-4 accent-slate-900"
+                        />
+                        노출
+                      </label>
                     </div>
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <div className="mt-4">
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
+                        노출 순서
+                      </label>
                       <input
-                        type="checkbox"
-                        checked={draft.recommendVisible}
+                        type="number"
+                        min="0"
+                        value={orderValue}
                         onChange={(event) =>
-                          setDrafts((prev) =>
-                            prev.map((item) =>
-                              item.dbId === draft.dbId
-                                ? { ...item, recommendVisible: event.target.checked }
-                                : item
-                            )
-                          )
+                          handleUpdateOrder(draft.dbId, event.target.value)
                         }
-                        className="h-4 w-4 accent-slate-900"
+                        className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none"
+                        placeholder="낮을수록 먼저 노출"
                       />
-                      노출
-                    </label>
-                  </div>
-                  <div className="mt-4">
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      노출 순서
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={draft.recommendOrder}
-                      onChange={(event) =>
-                        setDrafts((prev) =>
-                          prev.map((item) =>
-                            item.dbId === draft.dbId
-                              ? { ...item, recommendOrder: event.target.value }
-                              : item
-                          )
-                        )
-                      }
-                      className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none"
-                      placeholder="낮을수록 먼저 노출"
-                    />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="px-6 py-10 text-center text-sm text-slate-500">
-            먼저 `상품 관리`에서 모바일 상품을 등록해 주세요.
+            {searchText.trim()
+              ? '검색 조건에 맞는 상품이 없습니다.'
+              : '먼저 `상품 관리`에서 모바일 상품을 등록해 주세요.'}
           </div>
         )}
       </section>
