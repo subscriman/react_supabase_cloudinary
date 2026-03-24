@@ -80,6 +80,10 @@ interface SubProductDraft {
   description: string;
   quantity: string;
   validityPeriod: string;
+  trackerCycleUnit: ReminderRepeatUnit;
+  trackerCycleLimit: string;
+  trackerAnnualLimit: string;
+  trackerOverflowMessage: string;
 }
 
 interface BenefitTrackerDraft {
@@ -99,6 +103,9 @@ const inputClassName =
   'w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-500';
 
 const textAreaClassName = `${inputClassName} min-h-[112px] resize-y`;
+const sectionCardClassName =
+  'rounded-[24px] border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-5';
+const softPanelClassName = 'rounded-[20px] border border-white bg-white/90 p-4';
 
 const productTypeOptions: Array<{ value: EditableProductType; label: string }> = [
   { value: 'A', label: '타입 A' },
@@ -152,6 +159,10 @@ function createEmptySubProduct(): SubProductDraft {
     description: '',
     quantity: '',
     validityPeriod: '',
+    trackerCycleUnit: 'month',
+    trackerCycleLimit: '1',
+    trackerAnnualLimit: '',
+    trackerOverflowMessage: '',
   };
 }
 
@@ -308,6 +319,39 @@ function resizeSubProducts(current: SubProductDraft[], nextCount: number) {
   ];
 }
 
+function buildCycleLabel(cycleUnit: ReminderRepeatUnit) {
+  const labelMap: Record<ReminderRepeatUnit, string> = {
+    day: '일',
+    week: '주',
+    month: '월',
+    year: '년',
+    event_window: '이벤트 기간',
+  };
+
+  return labelMap[cycleUnit];
+}
+
+function buildTypeCOverflowMessage(
+  title: string,
+  cycleUnit: ReminderRepeatUnit,
+  cycleLimit: number | null,
+  annualLimit: number | null
+) {
+  const parts: string[] = [];
+
+  if (cycleLimit) {
+    parts.push(`${buildCycleLabel(cycleUnit)} ${cycleLimit}회`);
+  }
+
+  if (annualLimit) {
+    parts.push(`연 ${annualLimit}회`);
+  }
+
+  return parts.length
+    ? `${title}은 ${parts.join(', ')} 기준으로 관리합니다. 그래도 기록할까요?`
+    : `${title} 사용 기록을 남길까요?`;
+}
+
 function buildTypeCTrackersFromSubProducts(
   subProducts: SubProductDraft[],
   productName: string
@@ -318,6 +362,13 @@ function buildTypeCTrackersFromSubProducts(
       const title = item.name.trim();
       const description = item.description.trim();
       const isInfoMode = item.type === 'service';
+      const cycleUnit = item.trackerCycleUnit || 'month';
+      const cycleLimit = isInfoMode
+        ? null
+        : parseNullableNumber(item.trackerCycleLimit) ?? 1;
+      const annualLimit = isInfoMode
+        ? null
+        : parseNullableNumber(item.trackerAnnualLimit);
 
       return {
         id: slugifySeedKey(`${productName}-${title}-${index + 1}`),
@@ -325,13 +376,14 @@ function buildTypeCTrackersFromSubProducts(
         description,
         groupTitle: title,
         displayMode: isInfoMode ? ('info' as const) : ('check' as const),
-        cycleUnit: 'month' as const,
-        cycleLimit: isInfoMode ? null : 1,
-        annualLimit: null,
+        cycleUnit,
+        cycleLimit,
+        annualLimit,
         entryMode: 'checkbox' as const,
         overflowMessage: isInfoMode
           ? undefined
-          : `${title}은 월 1회 기준으로 체크하는 모듈입니다.`,
+          : item.trackerOverflowMessage.trim() ||
+            buildTypeCOverflowMessage(title, cycleUnit, cycleLimit, annualLimit),
       };
     });
 }
@@ -361,6 +413,7 @@ function toDraft(
   defaultCategory: MobileCatalogCategory = 'ott'
 ): ProductDraft {
   const meta = preset.template.seedMeta || {};
+  const typeCTrackers = meta.productType === 'C' ? meta.benefitTrackers || [] : [];
 
   return {
     dbId: 'dbId' in preset ? preset.dbId || '' : '',
@@ -394,24 +447,55 @@ function toDraft(
     benefitConditionText: meta.benefitConditionText || '',
     subProducts:
       preset.template.subProducts.length > 0
-        ? preset.template.subProducts.map((subProduct) => ({
-            name: subProduct.name || '',
-            type: subProduct.type,
-            description: subProduct.description || '',
-            quantity:
-              subProduct.quantity != null ? String(subProduct.quantity) : '',
-            validityPeriod:
-              subProduct.validityPeriod != null
-                ? String(subProduct.validityPeriod)
-                : '',
-          }))
-        : meta.productType === 'C' && meta.benefitTrackers && meta.benefitTrackers.length > 0
-          ? meta.benefitTrackers.map((tracker) => ({
+        ? preset.template.subProducts.map((subProduct, index) => {
+            const matchedTracker =
+              typeCTrackers.find((tracker) => tracker.title === subProduct.name) ||
+              typeCTrackers[index] ||
+              null;
+
+            return {
+              name: subProduct.name || '',
+              type:
+                meta.productType === 'C'
+                  ? matchedTracker?.displayMode === 'info'
+                    ? 'service'
+                    : 'benefit'
+                  : subProduct.type,
+              description:
+                meta.productType === 'C'
+                  ? matchedTracker?.description || subProduct.description || ''
+                  : subProduct.description || '',
+              quantity:
+                subProduct.quantity != null ? String(subProduct.quantity) : '',
+              validityPeriod:
+                subProduct.validityPeriod != null
+                  ? String(subProduct.validityPeriod)
+                  : '',
+              trackerCycleUnit: matchedTracker?.cycleUnit || 'month',
+              trackerCycleLimit:
+                matchedTracker?.cycleLimit != null
+                  ? String(matchedTracker.cycleLimit)
+                  : '1',
+              trackerAnnualLimit:
+                matchedTracker?.annualLimit != null
+                  ? String(matchedTracker.annualLimit)
+                  : '',
+              trackerOverflowMessage: matchedTracker?.overflowMessage || '',
+            };
+          })
+        : meta.productType === 'C' && typeCTrackers.length > 0
+          ? typeCTrackers.map((tracker) => ({
               name: tracker.title || '',
               type: tracker.displayMode === 'info' ? 'service' : 'benefit',
               description: tracker.description || '',
               quantity: '',
               validityPeriod: '',
+              trackerCycleUnit: tracker.cycleUnit || 'month',
+              trackerCycleLimit:
+                tracker.cycleLimit != null ? String(tracker.cycleLimit) : '1',
+              trackerAnnualLimit:
+                tracker.annualLimit != null ? String(tracker.annualLimit) : '',
+              trackerOverflowMessage: tracker.overflowMessage || '',
             }))
           : [createEmptySubProduct()],
     benefitTrackers:
@@ -551,6 +635,22 @@ function updateStringArray(
   nextValue: string
 ) {
   return values.map((value, valueIndex) => (valueIndex === index ? nextValue : value));
+}
+
+function updateSubProductField<K extends keyof SubProductDraft>(
+  subProducts: SubProductDraft[],
+  index: number,
+  key: K,
+  value: SubProductDraft[K]
+) {
+  return subProducts.map((item, itemIndex) =>
+    itemIndex === index
+      ? {
+          ...item,
+          [key]: value,
+        }
+      : item
+  );
 }
 
 export default function MobileProductManager({
@@ -854,156 +954,185 @@ export default function MobileProductManager({
         </div>
 
         <div className="mt-8 space-y-8">
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">상품명</label>
-              <input
-                value={draft.name}
-                onChange={(event) =>
-                  setDraft((prev) => ({ ...prev, name: event.target.value }))
-                }
-                className={inputClassName}
-                placeholder="예: 넷플릭스"
-              />
+          <section className={sectionCardClassName}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">기본 정보 카드</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  상품 기본값과 노출 기준을 한 번에 설정합니다.
+                </p>
+              </div>
+              <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">
+                공통 입력
+              </div>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">제공업체</label>
-              <input
-                value={draft.provider}
-                onChange={(event) =>
-                  setDraft((prev) => ({ ...prev, provider: event.target.value }))
-                }
-                className={inputClassName}
-                placeholder="예: Netflix"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">상품 타입</label>
-              <select
-                value={draft.productType}
-                onChange={(event) =>
-                  setDraft((prev) => {
-                    const nextProductType = event.target.value as EditableProductType;
 
-                    return {
+            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className={softPanelClassName}>
+                <label className="mb-2 block text-sm font-medium text-slate-700">상품명</label>
+                <input
+                  value={draft.name}
+                  onChange={(event) =>
+                    setDraft((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                  className={inputClassName}
+                  placeholder="예: 넷플릭스"
+                />
+              </div>
+              <div className={softPanelClassName}>
+                <label className="mb-2 block text-sm font-medium text-slate-700">제공업체</label>
+                <input
+                  value={draft.provider}
+                  onChange={(event) =>
+                    setDraft((prev) => ({ ...prev, provider: event.target.value }))
+                  }
+                  className={inputClassName}
+                  placeholder="예: Netflix"
+                />
+              </div>
+              <div className={softPanelClassName}>
+                <label className="mb-2 block text-sm font-medium text-slate-700">상품 타입</label>
+                <select
+                  value={draft.productType}
+                  onChange={(event) =>
+                    setDraft((prev) => {
+                      const nextProductType = event.target.value as EditableProductType;
+
+                      return {
+                        ...prev,
+                        productType: nextProductType,
+                        ...createModuleDefaults(nextProductType),
+                      };
+                    })
+                  }
+                  className={inputClassName}
+                >
+                  {productTypeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={softPanelClassName}>
+                <label className="mb-2 block text-sm font-medium text-slate-700">카테고리</label>
+                <select
+                  value={draft.mobileCategory}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
                       ...prev,
-                      productType: nextProductType,
-                      ...createModuleDefaults(nextProductType),
-                    };
-                  })
-                }
-                className={inputClassName}
-              >
-                {productTypeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                      mobileCategory: event.target.value as MobileCatalogCategory,
+                    }))
+                  }
+                  className={inputClassName}
+                >
+                  {availableCategories.map((category) => (
+                    <option key={category.key} value={category.key}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">카테고리</label>
-              <select
-                value={draft.mobileCategory}
-                onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    mobileCategory: event.target.value as MobileCatalogCategory,
-                  }))
-                }
-                className={inputClassName}
-              >
-                {availableCategories.map((category) => (
-                  <option key={category.key} value={category.key}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </section>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">통신사</label>
-              <select
-                value={draft.carrier}
-                onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    carrier: event.target.value as Carrier,
-                  }))
-                }
-                className={inputClassName}
+            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className={softPanelClassName}>
+                <label className="mb-2 block text-sm font-medium text-slate-700">통신사</label>
+                <select
+                  value={draft.carrier}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      carrier: event.target.value as Carrier,
+                    }))
+                  }
+                  className={inputClassName}
+                >
+                  {carrierOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={softPanelClassName}>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  파트너사
+                </label>
+                <select
+                  value={draft.partnerId}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      partnerId: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                >
+                  <option value="">선택 안 함</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>
+                      {formatPartnerLabel(partner)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={softPanelClassName}>
+                <label className="mb-2 block text-sm font-medium text-slate-700">시드 키</label>
+                <input
+                  value={draft.seedKey}
+                  onChange={(event) =>
+                    setDraft((prev) => ({ ...prev, seedKey: event.target.value }))
+                  }
+                  className={inputClassName}
+                  placeholder="비워두면 자동 생성"
+                />
+              </div>
+              <label
+                className={`${softPanelClassName} flex items-center gap-3 text-sm font-medium text-slate-700`}
               >
-                {carrierOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                파트너사
+                <input
+                  type="checkbox"
+                  checked={draft.mobileEnabled}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      mobileEnabled: event.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 accent-slate-900"
+                />
+                모바일 노출
               </label>
-              <select
-                value={draft.partnerId}
-                onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    partnerId: event.target.value,
-                  }))
-                }
-                className={inputClassName}
-              >
-                <option value="">선택 안 함</option>
-                {partners.map((partner) => (
-                  <option key={partner.id} value={partner.id}>
-                    {formatPartnerLabel(partner)}
-                  </option>
-                ))}
-              </select>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">시드 키</label>
-              <input
-                value={draft.seedKey}
+
+            <div className={`${softPanelClassName} mt-4`}>
+              <label className="mb-2 block text-sm font-medium text-slate-700">상품 설명</label>
+              <textarea
+                value={draft.description}
                 onChange={(event) =>
-                  setDraft((prev) => ({ ...prev, seedKey: event.target.value }))
+                  setDraft((prev) => ({ ...prev, description: event.target.value }))
                 }
-                className={inputClassName}
-                placeholder="비워두면 자동 생성"
+                className={textAreaClassName}
+                placeholder="모바일 카드와 상세 화면에 들어갈 설명"
               />
             </div>
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700">
-              <input
-                type="checkbox"
-                checked={draft.mobileEnabled}
-                onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    mobileEnabled: event.target.checked,
-                  }))
-                }
-                className="h-4 w-4 accent-slate-900"
-              />
-              모바일 노출
-            </label>
           </section>
 
-          <section>
-            <label className="mb-2 block text-sm font-medium text-slate-700">상품 설명</label>
-            <textarea
-              value={draft.description}
-              onChange={(event) =>
-                setDraft((prev) => ({ ...prev, description: event.target.value }))
-              }
-              className={textAreaClassName}
-              placeholder="모바일 카드와 상세 화면에 들어갈 설명"
-            />
-          </section>
+          <section className={sectionCardClassName}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">미디어 / 출처 카드</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  대표 이미지와 공식 안내 링크를 카드형으로 정리합니다.
+                </p>
+              </div>
+              <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">
+                공통 입력
+              </div>
+            </div>
 
-          <section className="grid gap-6 lg:grid-cols-2">
+            <div className="mt-4 grid gap-6 lg:grid-cols-2">
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <label className="block text-sm font-medium text-slate-700">
@@ -1123,9 +1252,10 @@ export default function MobileProductManager({
                 />
               </div>
             </div>
+            </div>
           </section>
 
-          <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+          <section className={sectionCardClassName}>
             <h3 className="text-base font-semibold text-slate-900">기본 결제 / 플랜 정보</h3>
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               <div className="xl:col-span-2">
@@ -1228,7 +1358,7 @@ export default function MobileProductManager({
           </section>
 
           {draft.productType === 'B' ? (
-            <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <section className={sectionCardClassName}>
               <h3 className="text-base font-semibold text-slate-900">타입 B 모듈</h3>
               <p className="mt-1 text-sm text-slate-500">
                 사용 체크 관리 모듈을 불러와 총 체크 수와 일별/월별 제한을 설정합니다.
@@ -1322,12 +1452,12 @@ export default function MobileProductManager({
           ) : null}
 
           {draft.productType === 'C' ? (
-            <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <section className={sectionCardClassName}>
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <h3 className="text-base font-semibold text-slate-900">타입 C 모듈</h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    서브상품 개수와 이름을 정하면, 모바일에서 복합 구조 모듈로 표시됩니다.
+                    서브상품별 이름, 설명, 체크 조건을 카드 단위로 설정합니다.
                   </p>
                 </div>
                 <div className="w-full md:w-56">
@@ -1356,64 +1486,17 @@ export default function MobileProductManager({
                 {draft.subProducts.map((subProduct, index) => (
                   <div
                     key={`type-c-sub-product-${index}`}
-                    className="rounded-[22px] border border-white bg-white p-4"
+                    className="rounded-[24px] border border-white bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.05)]"
                   >
-                    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr),180px]">
-                      <input
-                        value={subProduct.name}
-                        onChange={(event) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            subProducts: prev.subProducts.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, name: event.target.value }
-                                : item
-                            ),
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder={`서브상품명 ${index + 1}`}
-                      />
-                      <select
-                        value={subProduct.type === 'service' ? 'service' : 'benefit'}
-                        onChange={(event) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            subProducts: prev.subProducts.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? {
-                                    ...item,
-                                    type:
-                                      event.target.value === 'service'
-                                        ? 'service'
-                                        : 'benefit',
-                                  }
-                                : item
-                            ),
-                          }))
-                        }
-                        className={inputClassName}
-                      >
-                        <option value="benefit">체크형</option>
-                        <option value="service">정보형</option>
-                      </select>
-                    </div>
-                    <textarea
-                      value={subProduct.description}
-                      onChange={(event) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          subProducts: prev.subProducts.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, description: event.target.value }
-                              : item
-                          ),
-                        }))
-                      }
-                      className={`${textAreaClassName} mt-3 min-h-[88px]`}
-                      placeholder="서브상품 추가 정보"
-                    />
-                    <div className="mt-3 flex justify-end">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          서브상품 {index + 1}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          개별 규칙은 모바일 타입 C 카드에 그대로 반영됩니다.
+                        </p>
+                      </div>
                       <button
                         type="button"
                         onClick={() =>
@@ -1432,6 +1515,187 @@ export default function MobileProductManager({
                         삭제
                       </button>
                     </div>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,1fr),180px]">
+                      <div className={softPanelClassName}>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          서브상품명
+                        </label>
+                        <input
+                          value={subProduct.name}
+                          onChange={(event) =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              subProducts: updateSubProductField(
+                                prev.subProducts,
+                                index,
+                                'name',
+                                event.target.value
+                              ),
+                            }))
+                          }
+                          className={inputClassName}
+                          placeholder={`서브상품명 ${index + 1}`}
+                        />
+                      </div>
+                      <div className={softPanelClassName}>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          표시 타입
+                        </label>
+                        <select
+                          value={subProduct.type === 'service' ? 'service' : 'benefit'}
+                          onChange={(event) =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              subProducts: updateSubProductField(
+                                prev.subProducts,
+                                index,
+                                'type',
+                                event.target.value === 'service'
+                                  ? 'service'
+                                  : 'benefit'
+                              ),
+                            }))
+                          }
+                          className={inputClassName}
+                        >
+                          <option value="benefit">체크형</option>
+                          <option value="service">정보형</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className={`${softPanelClassName} mt-4`}>
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
+                        서브상품 추가 정보
+                      </label>
+                      <textarea
+                        value={subProduct.description}
+                        onChange={(event) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            subProducts: updateSubProductField(
+                              prev.subProducts,
+                              index,
+                              'description',
+                              event.target.value
+                            ),
+                          }))
+                        }
+                        className={`${textAreaClassName} min-h-[88px]`}
+                        placeholder="혜택 내용, 사용 팁, 안내 문구"
+                      />
+                    </div>
+
+                    {subProduct.type !== 'service' ? (
+                      <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-sm font-semibold text-slate-900">
+                          체크 조건 카드
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          서브상품별로 주기, 주기 한도, 연간 한도를 따로 설정할 수 있습니다.
+                        </p>
+                        <div className="mt-4 grid gap-4 md:grid-cols-3">
+                          <div className={softPanelClassName}>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                              주기
+                            </label>
+                            <select
+                              value={subProduct.trackerCycleUnit}
+                              onChange={(event) =>
+                                setDraft((prev) => ({
+                                  ...prev,
+                                  subProducts: updateSubProductField(
+                                    prev.subProducts,
+                                    index,
+                                    'trackerCycleUnit',
+                                    event.target.value as ReminderRepeatUnit
+                                  ),
+                                }))
+                              }
+                              className={inputClassName}
+                            >
+                              {cycleOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className={softPanelClassName}>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                              주기 한도
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={subProduct.trackerCycleLimit}
+                              onChange={(event) =>
+                                setDraft((prev) => ({
+                                  ...prev,
+                                  subProducts: updateSubProductField(
+                                    prev.subProducts,
+                                    index,
+                                    'trackerCycleLimit',
+                                    event.target.value
+                                  ),
+                                }))
+                              }
+                              className={inputClassName}
+                              placeholder="예: 1"
+                            />
+                          </div>
+                          <div className={softPanelClassName}>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                              연간 한도
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={subProduct.trackerAnnualLimit}
+                              onChange={(event) =>
+                                setDraft((prev) => ({
+                                  ...prev,
+                                  subProducts: updateSubProductField(
+                                    prev.subProducts,
+                                    index,
+                                    'trackerAnnualLimit',
+                                    event.target.value
+                                  ),
+                                }))
+                              }
+                              className={inputClassName}
+                              placeholder="선택 입력"
+                            />
+                          </div>
+                        </div>
+                        <div className={`${softPanelClassName} mt-4`}>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
+                            초과 알럿 문구
+                          </label>
+                          <textarea
+                            value={subProduct.trackerOverflowMessage}
+                            onChange={(event) =>
+                              setDraft((prev) => ({
+                                ...prev,
+                                subProducts: updateSubProductField(
+                                  prev.subProducts,
+                                  index,
+                                  'trackerOverflowMessage',
+                                  event.target.value
+                                ),
+                              }))
+                            }
+                            className={`${textAreaClassName} min-h-[88px]`}
+                            placeholder="비워두면 규칙 기반 기본 문구를 사용합니다."
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-[20px] border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                        정보형 서브상품은 체크 조건 없이 안내 카드로만 노출됩니다.
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1442,7 +1706,7 @@ export default function MobileProductManager({
           ) : null}
 
           {draft.productType === 'D' ? (
-            <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <section className={sectionCardClassName}>
               <h3 className="text-base font-semibold text-slate-900">타입 D 모듈</h3>
               <p className="mt-1 text-sm text-slate-500">
                 날짜별 메모는 사용자 화면에서 남기고, 관리자는 기본 안내 정보와 서브 쿠폰 구성을 정의합니다.

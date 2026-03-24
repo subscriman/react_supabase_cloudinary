@@ -784,6 +784,13 @@ function MobileDetailView({
                                   <p className="text-sm font-medium text-slate-800">
                                     {tracker.title}
                                   </p>
+                                  <p className="mt-1 text-[11px] font-medium text-slate-400">
+                                    {buildRuleSummary(
+                                      tracker.cycleUnit,
+                                      tracker.cycleLimit ?? null,
+                                      tracker.annualLimit ?? null
+                                    )}
+                                  </p>
                                   <p className="mt-1 text-xs leading-5 text-slate-500">
                                     {tracker.description}
                                   </p>
@@ -1458,6 +1465,22 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
         if (tracker.id !== trackerId) return tracker;
 
         const cycleCount = countEntriesInCycle(tracker.entries, now, tracker.cycleUnit);
+        const annualCount = tracker.entries.length;
+
+        if (
+          tracker.annualLimit &&
+          annualCount >= tracker.annualLimit &&
+          !confirm(
+            tracker.overflowMessage ||
+              `${tracker.title}는 ${buildRuleSummary(
+                tracker.cycleUnit,
+                tracker.cycleLimit ?? null,
+                tracker.annualLimit ?? null
+              )} 조건입니다. 그래도 기록할까요?`
+          )
+        ) {
+          return tracker;
+        }
 
         if (
           tracker.cycleLimit &&
