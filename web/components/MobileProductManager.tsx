@@ -653,6 +653,27 @@ function updateSubProductField<K extends keyof SubProductDraft>(
   );
 }
 
+function reorderSubProducts(
+  subProducts: SubProductDraft[],
+  fromIndex: number,
+  toIndex: number
+) {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= subProducts.length ||
+    toIndex >= subProducts.length
+  ) {
+    return subProducts;
+  }
+
+  const nextItems = [...subProducts];
+  const [moved] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(toIndex, 0, moved);
+  return nextItems;
+}
+
 export default function MobileProductManager({
   products,
   categories,
@@ -673,6 +694,7 @@ export default function MobileProductManager({
   );
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [draggedTypeCIndex, setDraggedTypeCIndex] = useState<number | null>(null);
 
   const samplePresets = useMemo(
     () => getSubscriptionSamplePresets().filter(isMobileSubscriptionPreset),
@@ -1457,7 +1479,7 @@ export default function MobileProductManager({
                 <div>
                   <h3 className="text-base font-semibold text-slate-900">타입 C 모듈</h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    서브상품별 이름, 설명, 체크 조건을 카드 단위로 설정합니다.
+                    서브상품별 이름, 설명, 체크 조건을 카드 단위로 설정하고 순서도 직접 정렬합니다.
                   </p>
                 </div>
                 <div className="w-full md:w-56">
@@ -1486,7 +1508,28 @@ export default function MobileProductManager({
                 {draft.subProducts.map((subProduct, index) => (
                   <div
                     key={`type-c-sub-product-${index}`}
-                    className="rounded-[24px] border border-white bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.05)]"
+                    draggable
+                    onDragStart={() => setDraggedTypeCIndex(index)}
+                    onDragEnd={() => setDraggedTypeCIndex(null)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => {
+                      if (draggedTypeCIndex == null) return;
+
+                      setDraft((prev) => ({
+                        ...prev,
+                        subProducts: reorderSubProducts(
+                          prev.subProducts,
+                          draggedTypeCIndex,
+                          index
+                        ),
+                      }));
+                      setDraggedTypeCIndex(null);
+                    }}
+                    className={`rounded-[24px] border bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.05)] ${
+                      draggedTypeCIndex === index
+                        ? 'border-slate-400 ring-2 ring-slate-200'
+                        : 'border-white'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -1497,23 +1540,62 @@ export default function MobileProductManager({
                           개별 규칙은 모바일 타입 C 카드에 그대로 반영됩니다.
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            subProducts:
-                              prev.subProducts.length === 1
-                                ? [createEmptySubProduct()]
-                                : prev.subProducts.filter(
-                                    (_, itemIndex) => itemIndex !== index
-                                  ),
-                          }))
-                        }
-                        className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500"
-                      >
-                        삭제
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-medium text-slate-500">
+                          드래그 정렬
+                        </span>
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              subProducts: reorderSubProducts(
+                                prev.subProducts,
+                                index,
+                                index - 1
+                              ),
+                            }))
+                          }
+                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 disabled:opacity-40"
+                        >
+                          위로
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === draft.subProducts.length - 1}
+                          onClick={() =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              subProducts: reorderSubProducts(
+                                prev.subProducts,
+                                index,
+                                index + 1
+                              ),
+                            }))
+                          }
+                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 disabled:opacity-40"
+                        >
+                          아래로
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              subProducts:
+                                prev.subProducts.length === 1
+                                  ? [createEmptySubProduct()]
+                                  : prev.subProducts.filter(
+                                      (_, itemIndex) => itemIndex !== index
+                                    ),
+                            }))
+                          }
+                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500"
+                        >
+                          삭제
+                        </button>
+                      </div>
                     </div>
 
                     <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,1fr),180px]">

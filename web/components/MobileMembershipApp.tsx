@@ -496,21 +496,6 @@ function MobileDetailView({
   const { draft, preset } = detail;
   const previewImage = getPreviewImage(preset, draft);
 
-  const trackerGroups = useMemo(() => {
-    return draft.benefitTrackers
-      .filter((tracker) => tracker.displayMode !== 'info')
-      .reduce<Record<string, typeof draft.benefitTrackers>>((acc, tracker) => {
-        const key = tracker.groupTitle || tracker.title;
-        acc[key] = [...(acc[key] || []), tracker];
-        return acc;
-      }, {});
-  }, [draft.benefitTrackers]);
-
-  const infoTrackers = useMemo(
-    () => draft.benefitTrackers.filter((tracker) => tracker.displayMode === 'info'),
-    [draft.benefitTrackers]
-  );
-
   const usageCalendarRecords = useMemo<CalendarRecord[]>(() => {
     if (draft.productType === 'B') {
       return draft.usageEntries.map((entry, index) => ({
@@ -745,92 +730,93 @@ function MobileDetailView({
               </div>
 
               <div className="mt-4 space-y-3">
-                {Object.entries(trackerGroups).map(([groupTitle, trackers]) => (
-                  <div
-                    key={groupTitle}
-                    className="rounded-[22px] border border-slate-200 bg-slate-50 p-4"
-                  >
-                    <p className="text-sm font-semibold text-slate-900">{groupTitle}</p>
-                    <div className="mt-3 space-y-3">
-                      {trackers.map((tracker) => {
-                        const currentEntry = [...tracker.entries]
+                {draft.benefitTrackers.map((tracker) => {
+                  const currentEntry =
+                    tracker.displayMode !== 'info'
+                      ? [...tracker.entries]
                           .reverse()
                           .find((entry) =>
-                            isSameCycle(entry.checkedAt, new Date().toISOString(), tracker.cycleUnit)
-                          );
+                            isSameCycle(
+                              entry.checkedAt,
+                              new Date().toISOString(),
+                              tracker.cycleUnit
+                            )
+                          ) || null
+                      : null;
 
-                        return (
-                          <div
-                            key={tracker.id}
-                            className="rounded-2xl border border-white bg-white px-4 py-3"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <label className="flex min-w-0 flex-1 items-start gap-3">
-                                <input
-                                  type="checkbox"
-                                  checked={Boolean(currentEntry)}
-                                  onChange={() => {
-                                    if (currentEntry) {
-                                      if (!confirm('이번 주기 체크를 해제할까요?')) return;
-                                      onRemoveTrackerEntry(tracker.id, currentEntry.id);
-                                      return;
-                                    }
+                  if (tracker.displayMode === 'info') {
+                    return (
+                      <div
+                        key={tracker.id}
+                        className="rounded-[22px] border border-slate-200 bg-slate-50 p-4"
+                      >
+                        <p className="text-sm font-semibold text-slate-900">
+                          {tracker.title}
+                        </p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">
+                          {tracker.description}
+                        </p>
+                      </div>
+                    );
+                  }
 
-                                    onAddTrackerEntry(tracker.id);
-                                  }}
-                                  className="mt-1 h-5 w-5 accent-[var(--brand-coral)]"
-                                />
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-slate-800">
-                                    {tracker.title}
-                                  </p>
-                                  <p className="mt-1 text-[11px] font-medium text-slate-400">
-                                    {buildRuleSummary(
-                                      tracker.cycleUnit,
-                                      tracker.cycleLimit ?? null,
-                                      tracker.annualLimit ?? null
-                                    )}
-                                  </p>
-                                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                                    {tracker.description}
-                                  </p>
-                                </div>
-                              </label>
-                              <div className="flex shrink-0 flex-col items-end gap-2">
-                                <p className="text-[11px] text-slate-500">
-                                  {currentEntry
-                                    ? formatDateTime(currentEntry.checkedAt)
-                                    : '미사용'}
-                                </p>
-                                {currentEntry ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => onAddTrackerEntry(tracker.id)}
-                                    className="rounded-full border border-slate-200 px-3 py-1 text-[11px] text-slate-600"
-                                  >
-                                    + 기록
-                                  </button>
-                                ) : null}
-                              </div>
+                  return (
+                    <div
+                      key={tracker.id}
+                      className="rounded-[22px] border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <div className="rounded-2xl border border-white bg-white px-4 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <label className="flex min-w-0 flex-1 items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(currentEntry)}
+                              onChange={() => {
+                                if (currentEntry) {
+                                  if (!confirm('이번 주기 체크를 해제할까요?')) return;
+                                  onRemoveTrackerEntry(tracker.id, currentEntry.id);
+                                  return;
+                                }
+
+                                onAddTrackerEntry(tracker.id);
+                              }}
+                              className="mt-1 h-5 w-5 accent-[var(--brand-coral)]"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-800">
+                                {tracker.title}
+                              </p>
+                              <p className="mt-1 text-[11px] font-medium text-slate-400">
+                                {buildRuleSummary(
+                                  tracker.cycleUnit,
+                                  tracker.cycleLimit ?? null,
+                                  tracker.annualLimit ?? null
+                                )}
+                              </p>
+                              <p className="mt-1 text-xs leading-5 text-slate-500">
+                                {tracker.description}
+                              </p>
                             </div>
+                          </label>
+                          <div className="flex shrink-0 flex-col items-end gap-2">
+                            <p className="text-[11px] text-slate-500">
+                              {currentEntry ? formatDateTime(currentEntry.checkedAt) : '미사용'}
+                            </p>
+                            {currentEntry ? (
+                              <button
+                                type="button"
+                                onClick={() => onAddTrackerEntry(tracker.id)}
+                                className="rounded-full border border-slate-200 px-3 py-1 text-[11px] text-slate-600"
+                              >
+                                + 기록
+                              </button>
+                            ) : null}
                           </div>
-                        );
-                      })}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-
-                {infoTrackers.map((tracker) => (
-                  <div
-                    key={tracker.id}
-                    className="rounded-[22px] border border-slate-200 bg-slate-50 p-4"
-                  >
-                    <p className="text-sm font-semibold text-slate-900">{tracker.title}</p>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">
-                      {tracker.description}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {showCalendar ? (
