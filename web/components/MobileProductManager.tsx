@@ -16,6 +16,7 @@ import {
   PaymentMethodType,
   ProductType,
   ReminderRepeatUnit,
+  SeedMeta,
   SeedPreset,
   SeedSubProduct,
   UsageEntryMode,
@@ -57,6 +58,7 @@ interface ProductDraft {
   defaultPaymentMethodLabel: string;
   membershipGrade: string;
   usageCycleUnit: ReminderRepeatUnit;
+  dailyLimit: string;
   usageCycleLimit: string;
   annualLimit: string;
   usageHistoryTitle: string;
@@ -169,7 +171,83 @@ function createEmptyTracker(): BenefitTrackerDraft {
   };
 }
 
+function createModuleDefaults(
+  productType: EditableProductType
+): Pick<
+  ProductDraft,
+  | 'dailyLimit'
+  | 'usageCycleLimit'
+  | 'annualLimit'
+  | 'usageHistoryTitle'
+  | 'usageHistoryEntryMode'
+  | 'usageOverflowMessage'
+  | 'benefitAmountText'
+  | 'benefitConditionText'
+  | 'subProducts'
+  | 'benefitTrackers'
+> {
+  if (productType === 'B') {
+    return {
+      dailyLimit: '1',
+      usageCycleLimit: '1',
+      annualLimit: '6',
+      usageHistoryTitle: '',
+      usageHistoryEntryMode: 'checkbox',
+      usageOverflowMessage: '',
+      benefitAmountText: '',
+      benefitConditionText: '',
+      subProducts: [createEmptySubProduct()],
+      benefitTrackers: [createEmptyTracker()],
+    };
+  }
+
+  if (productType === 'C') {
+    return {
+      dailyLimit: '',
+      usageCycleLimit: '',
+      annualLimit: '',
+      usageHistoryTitle: '',
+      usageHistoryEntryMode: 'checkbox',
+      usageOverflowMessage: '',
+      benefitAmountText: '',
+      benefitConditionText: '',
+      subProducts: [createEmptySubProduct()],
+      benefitTrackers: [createEmptyTracker()],
+    };
+  }
+
+  if (productType === 'D') {
+    return {
+      dailyLimit: '',
+      usageCycleLimit: '',
+      annualLimit: '',
+      usageHistoryTitle: '',
+      usageHistoryEntryMode: 'checkbox',
+      usageOverflowMessage: '',
+      benefitAmountText: '',
+      benefitConditionText: '',
+      subProducts: [createEmptySubProduct()],
+      benefitTrackers: [createEmptyTracker()],
+    };
+  }
+
+  return {
+    dailyLimit: '',
+    usageCycleLimit: '',
+    annualLimit: '',
+    usageHistoryTitle: '',
+    usageHistoryEntryMode: 'checkbox',
+    usageOverflowMessage: '',
+    benefitAmountText: '',
+    benefitConditionText: '',
+    subProducts: [createEmptySubProduct()],
+    benefitTrackers: [createEmptyTracker()],
+  };
+}
+
 function createEmptyDraft(defaultCategory: MobileCatalogCategory = 'ott'): ProductDraft {
+  const moduleDefaults = createModuleDefaults('A');
+
   return {
     dbId: '',
     seedKey: '',
@@ -192,15 +270,7 @@ function createEmptyDraft(defaultCategory: MobileCatalogCategory = 'ott'): Produ
     defaultPaymentMethodLabel: '',
     membershipGrade: '',
     usageCycleUnit: 'month',
-    usageCycleLimit: '',
-    annualLimit: '',
-    usageHistoryTitle: '',
-    usageHistoryEntryMode: 'checkbox',
-    usageOverflowMessage: '',
-    benefitAmountText: '',
-    benefitConditionText: '',
-    subProducts: [createEmptySubProduct()],
-    benefitTrackers: [createEmptyTracker()],
+    ...moduleDefaults,
     homeFeatured: false,
     homeFeaturedOrder: '',
     recommendVisible: false,
@@ -217,6 +287,53 @@ function slugifySeedKey(input: string) {
     .slice(0, 40);
 
   return normalized || `mobile-${Date.now()}`;
+}
+
+function resizeSubProducts(current: SubProductDraft[], nextCount: number) {
+  if (!Number.isFinite(nextCount) || nextCount <= 0) {
+    return [createEmptySubProduct()];
+  }
+
+  if (nextCount === current.length) {
+    return current;
+  }
+
+  if (nextCount < current.length) {
+    return current.slice(0, nextCount);
+  }
+
+  return [
+    ...current,
+    ...Array.from({ length: nextCount - current.length }, () => createEmptySubProduct()),
+  ];
+}
+
+function buildTypeCTrackersFromSubProducts(
+  subProducts: SubProductDraft[],
+  productName: string
+) {
+  return subProducts
+    .filter((item) => item.name.trim())
+    .map((item, index) => {
+      const title = item.name.trim();
+      const description = item.description.trim();
+      const isInfoMode = item.type === 'service';
+
+      return {
+        id: slugifySeedKey(`${productName}-${title}-${index + 1}`),
+        title,
+        description,
+        groupTitle: title,
+        displayMode: isInfoMode ? ('info' as const) : ('check' as const),
+        cycleUnit: 'month' as const,
+        cycleLimit: isInfoMode ? null : 1,
+        annualLimit: null,
+        entryMode: 'checkbox' as const,
+        overflowMessage: isInfoMode
+          ? undefined
+          : `${title}은 월 1회 기준으로 체크하는 모듈입니다.`,
+      };
+    });
 }
 
 function parseCsvList(value: string) {
@@ -267,6 +384,7 @@ function toDraft(
     defaultPaymentMethodLabel: meta.defaultPaymentMethodLabel || '',
     membershipGrade: meta.membershipGrade || '',
     usageCycleUnit: meta.usageCycleUnit || 'month',
+    dailyLimit: meta.dailyLimit != null ? String(meta.dailyLimit) : '',
     usageCycleLimit: meta.usageCycleLimit != null ? String(meta.usageCycleLimit) : '',
     annualLimit: meta.annualLimit != null ? String(meta.annualLimit) : '',
     usageHistoryTitle: meta.usageHistoryTitle || '',
@@ -287,7 +405,15 @@ function toDraft(
                 ? String(subProduct.validityPeriod)
                 : '',
           }))
-        : [createEmptySubProduct()],
+        : meta.productType === 'C' && meta.benefitTrackers && meta.benefitTrackers.length > 0
+          ? meta.benefitTrackers.map((tracker) => ({
+              name: tracker.title || '',
+              type: tracker.displayMode === 'info' ? 'service' : 'benefit',
+              description: tracker.description || '',
+              quantity: '',
+              validityPeriod: '',
+            }))
+          : [createEmptySubProduct()],
     benefitTrackers:
       meta.benefitTrackers && meta.benefitTrackers.length > 0
         ? meta.benefitTrackers.map((tracker) => ({
@@ -328,23 +454,10 @@ function toSeedPreset(draft: ProductDraft): SeedPreset {
     }));
   const benefitTrackers =
     draft.productType === 'C'
-      ? draft.benefitTrackers
-          .filter((tracker) => tracker.title.trim())
-          .map((tracker) => ({
-            id: tracker.id || slugifySeedKey(`${draft.name}-${tracker.title}`),
-            title: tracker.title.trim(),
-            description: tracker.description.trim(),
-            groupTitle: tracker.groupTitle.trim() || undefined,
-            displayMode: tracker.displayMode,
-            cycleUnit: tracker.cycleUnit,
-            cycleLimit: parseNullableNumber(tracker.cycleLimit),
-            annualLimit: parseNullableNumber(tracker.annualLimit),
-            entryMode: tracker.entryMode,
-            overflowMessage: tracker.overflowMessage.trim() || undefined,
-          }))
+      ? buildTypeCTrackersFromSubProducts(draft.subProducts, draft.name)
       : [];
 
-  const meta = {
+  const meta: SeedMeta = {
     seedKey: draft.seedKey || slugifySeedKey(`${draft.name}-${draft.productType}`),
     partnerId: draft.partnerId || null,
     carrier: draft.carrier,
@@ -374,7 +487,9 @@ function toSeedPreset(draft: ProductDraft): SeedPreset {
       draft.productType === 'B' ||
       draft.productType === 'C' ||
       draft.productType === 'D',
-    usageCycleUnit: draft.productType === 'B' ? draft.usageCycleUnit : undefined,
+    usageCycleUnit: draft.productType === 'B' ? ('month' as const) : undefined,
+    dailyLimit:
+      draft.productType === 'B' ? parseNullableNumber(draft.dailyLimit) : null,
     usageCycleLimit:
       draft.productType === 'B'
         ? parseNullableNumber(draft.usageCycleLimit)
@@ -383,19 +498,29 @@ function toSeedPreset(draft: ProductDraft): SeedPreset {
       draft.productType === 'B' ? parseNullableNumber(draft.annualLimit) : null,
     usageHistoryTitle:
       draft.productType === 'B'
-        ? draft.usageHistoryTitle.trim()
-        : '',
+        ? draft.usageHistoryTitle.trim() ||
+          `${parseNullableNumber(draft.annualLimit) || 0}칸 사용 체크`
+        : undefined,
     usageHistoryEntryMode:
-      draft.productType === 'B' ? draft.usageHistoryEntryMode : undefined,
+      draft.productType === 'B' ? 'checkbox' : undefined,
     usageOverflowMessage:
       draft.productType === 'B'
-        ? draft.usageOverflowMessage.trim()
-        : '',
+        ? draft.usageOverflowMessage.trim() ||
+          `${draft.name.trim()}는 일 ${parseNullableNumber(draft.dailyLimit) || 1}회, 월 ${
+            parseNullableNumber(draft.usageCycleLimit) || 1
+          }회 조건으로 관리합니다. 그래도 기록할까요?`
+        : undefined,
     benefitAmountText:
-      draft.productType === 'B' ? draft.benefitAmountText.trim() : '',
+      draft.productType === 'B'
+        ? `총 ${parseNullableNumber(draft.annualLimit) || 0}칸`
+        : undefined,
     benefitConditionText:
-      draft.productType === 'B' ? draft.benefitConditionText.trim() : '',
-    benefitTrackers,
+      draft.productType === 'B'
+        ? `일 ${parseNullableNumber(draft.dailyLimit) || 1}회 / 월 ${
+            parseNullableNumber(draft.usageCycleLimit) || 1
+          }회`
+        : undefined,
+    benefitTrackers: draft.productType === 'C' ? benefitTrackers : undefined,
   };
 
   return {
@@ -757,10 +882,15 @@ export default function MobileProductManager({
               <select
                 value={draft.productType}
                 onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    productType: event.target.value as EditableProductType,
-                  }))
+                  setDraft((prev) => {
+                    const nextProductType = event.target.value as EditableProductType;
+
+                    return {
+                      ...prev,
+                      productType: nextProductType,
+                      ...createModuleDefaults(nextProductType),
+                    };
+                  })
                 }
                 className={inputClassName}
               >
@@ -1097,150 +1227,11 @@ export default function MobileProductManager({
             </div>
           </section>
 
-          <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900">서브 상품 / 혜택 목록</h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  타입 C, D는 물론 다른 타입도 상세 정보로 함께 노출할 수 있습니다.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    subProducts: [...prev.subProducts, createEmptySubProduct()],
-                  }))
-                }
-                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600"
-              >
-                + 항목 추가
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-4">
-              {draft.subProducts.map((subProduct, index) => (
-                <div
-                  key={`sub-product-${index}`}
-                  className="rounded-[22px] border border-white bg-white p-4"
-                >
-                  <div className="grid gap-4 md:grid-cols-[minmax(0,1fr),160px,120px,120px]">
-                    <input
-                      value={subProduct.name}
-                      onChange={(event) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          subProducts: prev.subProducts.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, name: event.target.value }
-                              : item
-                          ),
-                        }))
-                      }
-                      className={inputClassName}
-                      placeholder="항목명"
-                    />
-                    <select
-                      value={subProduct.type}
-                      onChange={(event) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          subProducts: prev.subProducts.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? {
-                                  ...item,
-                                  type: event.target.value as SubProductType,
-                                }
-                              : item
-                          ),
-                        }))
-                      }
-                      className={inputClassName}
-                    >
-                      <option value="coupon">쿠폰</option>
-                      <option value="benefit">혜택</option>
-                      <option value="service">서비스</option>
-                    </select>
-                    <input
-                      type="number"
-                      min="0"
-                      value={subProduct.quantity}
-                      onChange={(event) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          subProducts: prev.subProducts.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, quantity: event.target.value }
-                              : item
-                          ),
-                        }))
-                      }
-                      className={inputClassName}
-                      placeholder="수량"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      value={subProduct.validityPeriod}
-                      onChange={(event) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          subProducts: prev.subProducts.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, validityPeriod: event.target.value }
-                              : item
-                          ),
-                        }))
-                      }
-                      className={inputClassName}
-                      placeholder="유효기간"
-                    />
-                  </div>
-                  <textarea
-                    value={subProduct.description}
-                    onChange={(event) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        subProducts: prev.subProducts.map((item, itemIndex) =>
-                          itemIndex === index
-                            ? { ...item, description: event.target.value }
-                            : item
-                        ),
-                      }))
-                    }
-                    className={`${textAreaClassName} mt-3 min-h-[88px]`}
-                    placeholder="서브 상품 설명"
-                  />
-                  <div className="mt-3 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          subProducts:
-                            prev.subProducts.length === 1
-                              ? [createEmptySubProduct()]
-                              : prev.subProducts.filter(
-                                  (_, itemIndex) => itemIndex !== index
-                                ),
-                        }))
-                      }
-                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500"
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
           {draft.productType === 'B' ? (
             <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
               <h3 className="text-base font-semibold text-slate-900">타입 B 모듈</h3>
               <p className="mt-1 text-sm text-slate-500">
-                월/연 사용 제한과 체크 기록 문구를 설정합니다.
+                사용 체크 관리 모듈을 불러와 총 체크 수와 일별/월별 제한을 설정합니다.
               </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div>
@@ -1258,26 +1249,41 @@ export default function MobileProductManager({
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">주기 단위</label>
-                  <select
-                    value={draft.usageCycleUnit}
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    총 체크박스 수
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={draft.annualLimit}
                     onChange={(event) =>
                       setDraft((prev) => ({
                         ...prev,
-                        usageCycleUnit: event.target.value as ReminderRepeatUnit,
+                        annualLimit: event.target.value,
                       }))
                     }
                     className={inputClassName}
-                  >
-                    {cycleOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="예: 6"
+                  />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">주기 한도</label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">일별 제한</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={draft.dailyLimit}
+                    onChange={(event) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        dailyLimit: event.target.value,
+                      }))
+                    }
+                    className={inputClassName}
+                    placeholder="예: 1"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">월별 제한</label>
                   <input
                     type="number"
                     min="0"
@@ -1292,91 +1298,6 @@ export default function MobileProductManager({
                     placeholder="예: 1"
                   />
                 </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">연간 한도</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={draft.annualLimit}
-                    onChange={(event) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        annualLimit: event.target.value,
-                      }))
-                    }
-                    className={inputClassName}
-                    placeholder="예: 6"
-                  />
-                </div>
-              </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    사용 기록 제목
-                  </label>
-                  <input
-                    value={draft.usageHistoryTitle}
-                    onChange={(event) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        usageHistoryTitle: event.target.value,
-                      }))
-                    }
-                    className={inputClassName}
-                    placeholder="예: 총 6회 사용 체크"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    기록 방식
-                  </label>
-                  <select
-                    value={draft.usageHistoryEntryMode}
-                    onChange={(event) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        usageHistoryEntryMode: event.target.value as UsageEntryMode,
-                      }))
-                    }
-                    className={inputClassName}
-                  >
-                    {usageEntryModeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">혜택 표시 문구</label>
-                  <input
-                    value={draft.benefitAmountText}
-                    onChange={(event) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        benefitAmountText: event.target.value,
-                      }))
-                    }
-                    className={inputClassName}
-                    placeholder="예: 월 1회, 연 6회"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">조건 설명</label>
-                  <input
-                    value={draft.benefitConditionText}
-                    onChange={(event) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        benefitConditionText: event.target.value,
-                      }))
-                    }
-                    className={inputClassName}
-                    placeholder="예: 사용 직후 직접 체크해 관리"
-                  />
-                </div>
               </div>
               <div className="mt-4">
                 <label className="mb-2 block text-sm font-medium text-slate-700">초과 알럿 문구</label>
@@ -1389,149 +1310,83 @@ export default function MobileProductManager({
                     }))
                   }
                   className={`${textAreaClassName} min-h-[88px]`}
+                  placeholder="예: 월 1회만 사용 가능합니다. 그래도 기록할까요?"
                 />
+              </div>
+              <div className="mt-4 rounded-2xl border border-white bg-white px-4 py-3 text-sm text-slate-600">
+                저장 시 타입 B는 <strong className="text-slate-900">총 체크 수</strong>를 기준으로
+                체크박스를 만들고, 사용 기록 시 <strong className="text-slate-900">일별/월별 제한</strong>
+                을 기준으로 경고를 띄웁니다.
               </div>
             </section>
           ) : null}
 
           {draft.productType === 'C' ? (
             <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <h3 className="text-base font-semibold text-slate-900">타입 C 모듈</h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    체크형/정보형 제휴 혜택을 브랜드 단위로 관리합니다.
+                    서브상품 개수와 이름을 정하면, 모바일에서 복합 구조 모듈로 표시됩니다.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      benefitTrackers: [...prev.benefitTrackers, createEmptyTracker()],
-                    }))
-                  }
-                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600"
-                >
-                  + 혜택 추가
-                </button>
+                <div className="w-full md:w-56">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    서브상품 개수
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={draft.subProducts.length}
+                    onChange={(event) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        subProducts: resizeSubProducts(
+                          prev.subProducts,
+                          Number(event.target.value || 1)
+                        ),
+                      }))
+                    }
+                    className={inputClassName}
+                  />
+                </div>
               </div>
 
               <div className="mt-4 space-y-4">
-                {draft.benefitTrackers.map((tracker, index) => (
+                {draft.subProducts.map((subProduct, index) => (
                   <div
-                    key={tracker.id}
+                    key={`type-c-sub-product-${index}`}
                     className="rounded-[22px] border border-white bg-white p-4"
                   >
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr),180px]">
                       <input
-                        value={tracker.title}
+                        value={subProduct.name}
                         onChange={(event) =>
                           setDraft((prev) => ({
                             ...prev,
-                            benefitTrackers: prev.benefitTrackers.map(
-                              (item, itemIndex) =>
-                                itemIndex === index
-                                  ? { ...item, title: event.target.value }
-                                  : item
+                            subProducts: prev.subProducts.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, name: event.target.value }
+                                : item
                             ),
                           }))
                         }
                         className={inputClassName}
-                        placeholder="혜택명"
-                      />
-                      <input
-                        value={tracker.groupTitle}
-                        onChange={(event) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            benefitTrackers: prev.benefitTrackers.map(
-                              (item, itemIndex) =>
-                                itemIndex === index
-                                  ? { ...item, groupTitle: event.target.value }
-                                  : item
-                            ),
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="그룹명"
+                        placeholder={`서브상품명 ${index + 1}`}
                       />
                       <select
-                        value={tracker.displayMode}
+                        value={subProduct.type === 'service' ? 'service' : 'benefit'}
                         onChange={(event) =>
                           setDraft((prev) => ({
                             ...prev,
-                            benefitTrackers: prev.benefitTrackers.map(
-                              (item, itemIndex) =>
-                                itemIndex === index
-                                  ? {
-                                      ...item,
-                                      displayMode:
-                                        event.target.value as BenefitTrackerDisplayMode,
-                                    }
-                                  : item
-                            ),
-                          }))
-                        }
-                        className={inputClassName}
-                      >
-                        {trackerDisplayOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={tracker.entryMode}
-                        onChange={(event) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            benefitTrackers: prev.benefitTrackers.map(
-                              (item, itemIndex) =>
-                                itemIndex === index
-                                  ? {
-                                      ...item,
-                                      entryMode: event.target.value as UsageEntryMode,
-                                    }
-                                  : item
-                            ),
-                          }))
-                        }
-                        className={inputClassName}
-                      >
-                        {usageEntryModeOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <textarea
-                      value={tracker.description}
-                      onChange={(event) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          benefitTrackers: prev.benefitTrackers.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, description: event.target.value }
-                              : item
-                          ),
-                        }))
-                      }
-                      className={`${textAreaClassName} mt-3 min-h-[88px]`}
-                      placeholder="혜택 설명"
-                    />
-                    <div className="mt-3 grid gap-4 md:grid-cols-4">
-                      <select
-                        value={tracker.cycleUnit}
-                        onChange={(event) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            benefitTrackers: prev.benefitTrackers.map((item, itemIndex) =>
+                            subProducts: prev.subProducts.map((item, itemIndex) =>
                               itemIndex === index
                                 ? {
                                     ...item,
-                                    cycleUnit: event.target.value as ReminderRepeatUnit,
+                                    type:
+                                      event.target.value === 'service'
+                                        ? 'service'
+                                        : 'benefit',
                                   }
                                 : item
                             ),
@@ -1539,76 +1394,24 @@ export default function MobileProductManager({
                         }
                         className={inputClassName}
                       >
-                        {cycleOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
+                        <option value="benefit">체크형</option>
+                        <option value="service">정보형</option>
                       </select>
-                      <input
-                        type="number"
-                        min="0"
-                        value={tracker.cycleLimit}
-                        onChange={(event) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            benefitTrackers: prev.benefitTrackers.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, cycleLimit: event.target.value }
-                                : item
-                            ),
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="주기 한도"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        value={tracker.annualLimit}
-                        onChange={(event) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            benefitTrackers: prev.benefitTrackers.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, annualLimit: event.target.value }
-                                : item
-                            ),
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="연간 한도"
-                      />
-                      <input
-                        value={tracker.id}
-                        onChange={(event) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            benefitTrackers: prev.benefitTrackers.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, id: event.target.value }
-                                : item
-                            ),
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="tracker id"
-                      />
                     </div>
                     <textarea
-                      value={tracker.overflowMessage}
+                      value={subProduct.description}
                       onChange={(event) =>
                         setDraft((prev) => ({
                           ...prev,
-                          benefitTrackers: prev.benefitTrackers.map((item, itemIndex) =>
+                          subProducts: prev.subProducts.map((item, itemIndex) =>
                             itemIndex === index
-                              ? { ...item, overflowMessage: event.target.value }
+                              ? { ...item, description: event.target.value }
                               : item
                           ),
                         }))
                       }
                       className={`${textAreaClassName} mt-3 min-h-[88px]`}
-                      placeholder="제한 초과 알럿 문구"
+                      placeholder="서브상품 추가 정보"
                     />
                     <div className="mt-3 flex justify-end">
                       <button
@@ -1616,10 +1419,10 @@ export default function MobileProductManager({
                         onClick={() =>
                           setDraft((prev) => ({
                             ...prev,
-                            benefitTrackers:
-                              prev.benefitTrackers.length === 1
-                                ? [createEmptyTracker()]
-                                : prev.benefitTrackers.filter(
+                            subProducts:
+                              prev.subProducts.length === 1
+                                ? [createEmptySubProduct()]
+                                : prev.subProducts.filter(
                                     (_, itemIndex) => itemIndex !== index
                                   ),
                           }))
@@ -1632,6 +1435,9 @@ export default function MobileProductManager({
                   </div>
                 ))}
               </div>
+              <div className="mt-4 rounded-2xl border border-white bg-white px-4 py-3 text-sm text-slate-600">
+                저장 시 타입 C는 입력한 서브상품으로 모바일 복합 구조 모듈을 자동 생성합니다.
+              </div>
             </section>
           ) : null}
 
@@ -1641,6 +1447,121 @@ export default function MobileProductManager({
               <p className="mt-1 text-sm text-slate-500">
                 날짜별 메모는 사용자 화면에서 남기고, 관리자는 기본 안내 정보와 서브 쿠폰 구성을 정의합니다.
               </p>
+              <div className="mt-4 space-y-4">
+                {draft.subProducts.map((subProduct, index) => (
+                  <div
+                    key={`type-d-sub-product-${index}`}
+                    className="rounded-[22px] border border-white bg-white p-4"
+                  >
+                    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr),160px,120px,120px]">
+                      <input
+                        value={subProduct.name}
+                        onChange={(event) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            subProducts: prev.subProducts.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, name: event.target.value }
+                                : item
+                            ),
+                          }))
+                        }
+                        className={inputClassName}
+                        placeholder="항목명"
+                      />
+                      <select
+                        value={subProduct.type}
+                        onChange={(event) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            subProducts: prev.subProducts.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? {
+                                    ...item,
+                                    type: event.target.value as SubProductType,
+                                  }
+                                : item
+                            ),
+                          }))
+                        }
+                        className={inputClassName}
+                      >
+                        <option value="coupon">쿠폰</option>
+                        <option value="benefit">혜택</option>
+                        <option value="service">서비스</option>
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        value={subProduct.quantity}
+                        onChange={(event) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            subProducts: prev.subProducts.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, quantity: event.target.value }
+                                : item
+                            ),
+                          }))
+                        }
+                        className={inputClassName}
+                        placeholder="수량"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        value={subProduct.validityPeriod}
+                        onChange={(event) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            subProducts: prev.subProducts.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, validityPeriod: event.target.value }
+                                : item
+                            ),
+                          }))
+                        }
+                        className={inputClassName}
+                        placeholder="유효기간"
+                      />
+                    </div>
+                    <textarea
+                      value={subProduct.description}
+                      onChange={(event) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          subProducts: prev.subProducts.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, description: event.target.value }
+                              : item
+                          ),
+                        }))
+                      }
+                      className={`${textAreaClassName} mt-3 min-h-[88px]`}
+                      placeholder="서브 상품 설명"
+                    />
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            subProducts:
+                              prev.subProducts.length === 1
+                                ? [createEmptySubProduct()]
+                                : prev.subProducts.filter(
+                                    (_, itemIndex) => itemIndex !== index
+                                  ),
+                          }))
+                        }
+                        className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </section>
           ) : null}
         </div>

@@ -63,6 +63,7 @@ export interface SeedMeta {
   usageManualCheckable?: boolean;
   remainingCountModel?: string;
   usageCycleUnit?: ReminderRepeatUnit;
+  dailyLimit?: number | null;
   usageCycleLimit?: number | null;
   annualLimit?: number | null;
   annualLimitOptions?: number[];
@@ -192,6 +193,7 @@ export interface UserMembershipConfig {
   };
   customRules: {
     usageCycleUnit: ReminderRepeatUnit;
+    dailyLimit: number | null;
     usageCycleLimit: number | null;
     annualLimit: number | null;
     eventWindowRule: string;
@@ -440,6 +442,7 @@ export function createDraftFromSeedPreset(preset: SeedPreset): UserMembershipCon
     },
     customRules: {
       usageCycleUnit: meta.usageCycleUnit || 'month',
+      dailyLimit: meta.dailyLimit ?? null,
       usageCycleLimit: meta.usageCycleLimit ?? null,
       annualLimit: meta.annualLimit ?? null,
       eventWindowRule: meta.eventWindowRule || '',
@@ -563,6 +566,17 @@ function normalizeSavedConfig(config: UserMembershipConfig): UserMembershipConfi
     mobileCategory: config.mobileCategory,
     catalogKind: config.catalogKind || 'telecom',
     productType: config.productType || 'telecom',
+    customRules: {
+      usageCycleUnit: config.customRules?.usageCycleUnit || 'month',
+      dailyLimit: config.customRules?.dailyLimit ?? null,
+      usageCycleLimit: config.customRules?.usageCycleLimit ?? null,
+      annualLimit: config.customRules?.annualLimit ?? null,
+      eventWindowRule: config.customRules?.eventWindowRule || '',
+      couponValidityRule: config.customRules?.couponValidityRule || '',
+      benefitAmountText: config.customRules?.benefitAmountText || '',
+      benefitConditionText: config.customRules?.benefitConditionText || '',
+      remainingCountModel: config.customRules?.remainingCountModel || 'monthly_counter',
+    },
     userMemo: config.userMemo || '',
     photos: normalizePhotos(config.photos || []),
     sourceUrls: config.sourceUrls || [],
@@ -646,6 +660,7 @@ function migrateLegacyConfig(value: unknown): UserMembershipConfig | null {
     },
     customRules: {
       usageCycleUnit: legacy.customRules?.usageCycleUnit || 'month',
+      dailyLimit: null,
       usageCycleLimit: legacy.customRules?.usageCycleLimit ?? null,
       annualLimit: legacy.customRules?.annualLimit ?? null,
       eventWindowRule: legacy.customRules?.eventWindowRule || '',
@@ -917,6 +932,7 @@ function createSamplePreset(input: {
   sourceCheckedAt?: string;
   membershipGrade?: string;
   usageCycleUnit?: ReminderRepeatUnit;
+  dailyLimit?: number | null;
   usageCycleLimit?: number | null;
   annualLimit?: number | null;
   usageHistoryTitle?: string;
@@ -958,8 +974,12 @@ function createSamplePreset(input: {
         sourceUrls: input.sourceUrls || [],
         sourceCheckedAt: input.sourceCheckedAt || '',
         membershipGrade: input.membershipGrade,
-        usageManualCheckable: input.productType === 'B' || input.productType === 'C',
+        usageManualCheckable:
+          input.productType === 'B' ||
+          input.productType === 'C' ||
+          input.productType === 'D',
         usageCycleUnit: input.usageCycleUnit,
+        dailyLimit: input.dailyLimit ?? null,
         usageCycleLimit: input.usageCycleLimit ?? null,
         annualLimit: input.annualLimit ?? null,
         usageHistoryTitle: input.usageHistoryTitle,

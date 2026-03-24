@@ -168,6 +168,24 @@ function buildRuleSummary(
   return parts.join(', ') || '조건 확인 필요';
 }
 
+function buildTypeBModuleSummary(draft: UserMembershipConfig) {
+  const parts: string[] = [];
+
+  if (draft.customRules.dailyLimit) {
+    parts.push(`일 ${draft.customRules.dailyLimit}회`);
+  }
+
+  if (draft.customRules.usageCycleLimit) {
+    parts.push(`월 ${draft.customRules.usageCycleLimit}회`);
+  }
+
+  if (draft.customRules.annualLimit) {
+    parts.push(`총 ${draft.customRules.annualLimit}칸`);
+  }
+
+  return parts.join(', ') || '조건 확인 필요';
+}
+
 function getPreviewImage(
   preset: SeedPreset | null,
   config?: UserMembershipConfig | null
@@ -637,11 +655,7 @@ function MobileDetailView({
                 <div>
                   <p className="text-base font-semibold text-slate-900">사용 체크 관리</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {buildRuleSummary(
-                      draft.customRules.usageCycleUnit,
-                      draft.customRules.usageCycleLimit,
-                      draft.customRules.annualLimit
-                    )}
+                    {buildTypeBModuleSummary(draft)}
                   </p>
                 </div>
                 <button
@@ -1366,6 +1380,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
       if (!prev) return prev;
 
       const annualLimit = prev.draft.customRules.annualLimit;
+      const dailyLimit = prev.draft.customRules.dailyLimit;
       const nextEntries = [...prev.draft.usageEntries];
 
       if (slotIndex < nextEntries.length) {
@@ -1378,20 +1393,27 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
         }
 
         const now = new Date().toISOString();
-        const cycleLimit = prev.draft.customRules.usageCycleLimit;
-        const cycleUnit = prev.draft.customRules.usageCycleUnit;
-        const cycleCount = countEntriesInCycle(nextEntries, now, cycleUnit);
+        const monthlyLimit = prev.draft.customRules.usageCycleLimit;
+        const dailyCount = countEntriesInCycle(nextEntries, now, 'day');
+        const monthlyCount = countEntriesInCycle(nextEntries, now, 'month');
 
         if (
-          cycleLimit &&
-          cycleCount >= cycleLimit &&
+          dailyLimit &&
+          dailyCount >= dailyLimit &&
           !confirm(
             prev.draft.usageOverflowMessage ||
-              `${prev.draft.displayName}는 ${buildRuleSummary(
-                cycleUnit,
-                cycleLimit,
-                prev.draft.customRules.annualLimit
-              )} 조건입니다. 그래도 기록할까요?`
+              `${prev.draft.displayName}는 일 ${dailyLimit}회까지만 체크할 수 있습니다. 그래도 기록할까요?`
+          )
+        ) {
+          return prev;
+        }
+
+        if (
+          monthlyLimit &&
+          monthlyCount >= monthlyLimit &&
+          !confirm(
+            prev.draft.usageOverflowMessage ||
+              `${prev.draft.displayName}는 월 ${monthlyLimit}회까지만 체크할 수 있습니다. 그래도 기록할까요?`
           )
         ) {
           return prev;
