@@ -7,6 +7,7 @@ import {
   UsageEntry,
   UserMembershipConfig,
 } from '../lib/user-membership';
+import ImageUploadArrayField from './ImageUploadArrayField';
 
 interface SubscriptionDesktopEditorProps {
   draft: UserMembershipConfig;
@@ -845,49 +846,22 @@ export default function SubscriptionDesktopEditor({
                         </div>
 
                         <div className="mt-5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-slate-700">
-                              개별 이미지 URL
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => onAddTrackerPhotoField(tracker.id)}
-                              disabled={tracker.photos.length >= 10}
-                              className="rounded-full border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 transition hover:border-[var(--brand-teal)] hover:text-[var(--brand-teal)] disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              이미지 칸 추가
-                            </button>
-                          </div>
-                          <div className="mt-3 space-y-3">
-                            {tracker.photos.map((photo, photoIndex) => (
-                              <div
-                                key={`${tracker.id}-photo-${photoIndex}`}
-                                className="flex gap-3"
-                              >
-                                <input
-                                  value={photo}
-                                  onChange={(event) =>
-                                    onUpdateTrackerPhoto(
-                                      tracker.id,
-                                      photoIndex,
-                                      event.target.value
-                                    )
-                                  }
-                                  className={inputClassName}
-                                  placeholder={`이미지 URL ${photoIndex + 1}`}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    onRemoveTrackerPhotoField(tracker.id, photoIndex)
-                                  }
-                                  className="rounded-2xl border border-slate-200 px-4 text-sm text-slate-600 transition hover:border-red-200 hover:text-red-600"
-                                >
-                                  삭제
-                                </button>
-                              </div>
-                            ))}
-                          </div>
+                          <ImageUploadArrayField
+                            title="개별 첨부 이미지"
+                            description="이 혜택 항목에서만 참고할 이미지를 Cloudinary에 업로드합니다."
+                            images={tracker.photos}
+                            onAdd={() => onAddTrackerPhotoField(tracker.id)}
+                            onChange={(photoIndex, value) =>
+                              onUpdateTrackerPhoto(tracker.id, photoIndex, value)
+                            }
+                            onRemove={(photoIndex) =>
+                              onRemoveTrackerPhotoField(tracker.id, photoIndex)
+                            }
+                            customNamePrefix={`tracker-${draft.id}-${tracker.id}`}
+                            addButtonLabel="이미지 추가"
+                            gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                            slotEmptyLabel="트래커 이미지"
+                          />
                         </div>
                       </>
                     )}
@@ -934,43 +908,18 @@ export default function SubscriptionDesktopEditor({
         ) : null}
 
         <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-base font-semibold text-slate-900">사진 URL</h4>
-              <p className="mt-1 text-sm text-slate-500">
-                최대 10장까지 저장할 수 있습니다. 웹 샘플에서는 URL만 관리합니다.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={onAddPhotoField}
-              disabled={draft.photos.length >= 10}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[var(--brand-teal)] hover:text-[var(--brand-teal)] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              사진 칸 추가
-            </button>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {draft.photos.map((photo, index) => (
-              <div key={`${draft.id}-photo-${index}`} className="flex gap-3">
-                <input
-                  value={photo}
-                  onChange={(event) => onUpdatePhoto(index, event.target.value)}
-                  className={inputClassName}
-                  placeholder={`사진 URL ${index + 1}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => onRemovePhotoField(index)}
-                  className="rounded-2xl border border-slate-200 px-4 text-sm text-slate-600 transition hover:border-red-200 hover:text-red-600"
-                >
-                  삭제
-                </button>
-              </div>
-            ))}
-          </div>
+          <ImageUploadArrayField
+            title="첨부 이미지"
+            description="상품별 참고 이미지를 Cloudinary에 업로드하고 저장합니다."
+            images={draft.photos}
+            onAdd={onAddPhotoField}
+            onChange={onUpdatePhoto}
+            onRemove={onRemovePhotoField}
+            customNamePrefix={`subscription-${draft.id}`}
+            addButtonLabel="이미지 추가"
+            gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            slotEmptyLabel="첨부 이미지"
+          />
         </div>
 
         <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

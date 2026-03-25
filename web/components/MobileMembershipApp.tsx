@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import ImageUploadArrayField from './ImageUploadArrayField';
 import {
   MobileCategoryOption,
   getFallbackMobileCategories,
@@ -898,48 +899,18 @@ function MobileDetailView({
           </section>
 
           <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-base font-semibold text-slate-900">첨부 이미지</p>
-              <button
-                type="button"
-                onClick={onAddPhotoField}
-                disabled={draft.photos.length >= 10}
-                className="rounded-full border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 disabled:opacity-50"
-              >
-                + 추가
-              </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {draft.photos.map((photo, index) => (
-                <div key={`${draft.id}-mobile-photo-${index}`}>
-                  <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[20px] border border-slate-300 bg-[var(--m-neutral-01)] text-xs text-slate-500">
-                    {photo ? (
-                      <img
-                        src={photo}
-                        alt={`첨부 이미지 ${index + 1}`}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      'IMG'
-                    )}
-                  </div>
-                  <input
-                    value={photo}
-                    onChange={(event) => onUpdatePhoto(index, event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-2 py-2 text-[11px] text-slate-700 outline-none"
-                    placeholder={`URL ${index + 1}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onRemovePhotoField(index)}
-                    className="mt-2 w-full rounded-xl border border-slate-300 px-2 py-2 text-[11px] text-slate-600"
-                  >
-                    삭제
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ImageUploadArrayField
+              title="첨부 이미지"
+              description="상품별로 참고할 이미지를 Cloudinary에 업로드해 저장합니다."
+              images={draft.photos}
+              onAdd={onAddPhotoField}
+              onChange={onUpdatePhoto}
+              onRemove={onRemovePhotoField}
+              customNamePrefix={`mobile-detail-${draft.id}`}
+              addButtonLabel="+ 추가"
+              gridClassName="grid-cols-2"
+              slotEmptyLabel="첨부 이미지"
+            />
           </section>
 
           <section className="rounded-[26px] border border-slate-300 bg-white p-4">

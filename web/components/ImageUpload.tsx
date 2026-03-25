@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { uploadImage, isCloudinaryConfigured } from '../lib/cloudinary';
 
 interface ImageUploadProps {
@@ -6,17 +6,29 @@ interface ImageUploadProps {
   currentImageUrl?: string;
   className?: string;
   customName?: string; // 커스텀 파일명
+  variant?: 'default' | 'tile';
+  emptyLabel?: string;
+  showStatusAlert?: boolean;
+  previewAspectClassName?: string;
 }
 
 export default function ImageUpload({ 
   onImageUploaded, 
   currentImageUrl, 
   className = '',
-  customName
+  customName,
+  variant = 'default',
+  emptyLabel = 'IMG',
+  showStatusAlert = true,
+  previewAspectClassName = 'aspect-square',
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPreviewUrl(currentImageUrl || null);
+  }, [currentImageUrl]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -47,9 +59,9 @@ export default function ImageUpload({
       const imageUrl = await uploadImage(file, customName);
       onImageUploaded(imageUrl);
       
-      if (isCloudinaryConfigured()) {
+      if (showStatusAlert && isCloudinaryConfigured()) {
         alert('이미지가 성공적으로 업로드되었습니다.');
-      } else {
+      } else if (showStatusAlert) {
         alert('이미지가 임시로 저장되었습니다. Cloudinary 설정을 완료하면 클라우드에 저장됩니다.');
       }
     } catch (error) {
@@ -72,6 +84,61 @@ export default function ImageUpload({
       fileInputRef.current.value = '';
     }
   };
+
+  if (variant === 'tile') {
+    return (
+      <div className={`rounded-[22px] border border-slate-200 bg-slate-50 p-3 ${className}`}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        <div
+          className={`relative flex ${previewAspectClassName} items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 bg-white text-xs text-slate-400`}
+        >
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="px-3 text-center leading-5">{emptyLabel}</span>
+          )}
+
+          {uploading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-[rgba(15,23,42,0.56)] px-3 text-center text-xs font-medium text-white">
+              업로드 중...
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={handleButtonClick}
+            disabled={uploading}
+            className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {previewUrl ? '변경' : '업로드'}
+          </button>
+          {previewUrl ? (
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              disabled={uploading}
+              className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              비우기
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-4 ${className}`}>

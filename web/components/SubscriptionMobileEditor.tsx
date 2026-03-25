@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import ImageUploadArrayField from './ImageUploadArrayField';
 import {
   BenefitTrackerState,
   PaymentCycle,
@@ -345,54 +346,18 @@ export default function SubscriptionMobileEditor({
 
   const renderAttachmentSection = () => (
     <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">첨부 이미지</p>
-          <p className="mt-1 text-xs text-slate-500">최대 10장까지 URL로 저장합니다.</p>
-        </div>
-        <button
-          type="button"
-          onClick={onAddPhotoField}
-          disabled={draft.photos.length >= 10}
-          className="rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-[var(--brand-teal)] hover:text-[var(--brand-teal)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          + 추가
-        </button>
-      </div>
-
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        {draft.photos.map((photo, index) => (
-          <div
-            key={`${draft.id}-mobile-photo-${index}`}
-            className="rounded-[22px] border border-slate-200 bg-slate-50 p-2"
-          >
-            <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[18px] bg-white text-xs text-slate-400">
-              {photo ? (
-                <img
-                  src={photo}
-                  alt={`첨부 이미지 ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                'IMG'
-              )}
-            </div>
-            <input
-              value={photo}
-              onChange={(event) => onUpdatePhoto(index, event.target.value)}
-              placeholder={`URL ${index + 1}`}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-[11px] text-slate-700 outline-none focus:border-[var(--brand-coral)]"
-            />
-            <button
-              type="button"
-              onClick={() => onRemovePhotoField(index)}
-              className="mt-2 w-full rounded-xl border border-slate-200 px-2 py-2 text-[11px] text-slate-600 transition hover:border-red-200 hover:text-red-600"
-            >
-              삭제
-            </button>
-          </div>
-        ))}
-      </div>
+      <ImageUploadArrayField
+        title="첨부 이미지"
+        description="참고 이미지를 Cloudinary에 업로드해 저장합니다."
+        images={draft.photos}
+        onAdd={onAddPhotoField}
+        onChange={onUpdatePhoto}
+        onRemove={onRemovePhotoField}
+        customNamePrefix={`mobile-editor-${draft.id}`}
+        addButtonLabel="+ 추가"
+        gridClassName="grid-cols-2"
+        slotEmptyLabel="첨부 이미지"
+      />
     </section>
   );
 

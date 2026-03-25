@@ -7,6 +7,7 @@ import {
 } from '../lib/mobile-categories';
 import { supabase } from '../lib/supabase';
 import { PartnerOption, formatPartnerLabel } from '../lib/partners';
+import ImageUploadArrayField from './ImageUploadArrayField';
 import {
   BenefitTrackerDisplayMode,
   Carrier,
@@ -1156,52 +1157,36 @@ export default function MobileProductManager({
 
             <div className="mt-4 grid gap-6 lg:grid-cols-2">
             <div>
-              <div className="mb-3 flex items-center justify-between">
-                <label className="block text-sm font-medium text-slate-700">
-                  대표 이미지 URL
-                </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDraft((prev) => ({ ...prev, photos: [...prev.photos, ''] }))
-                  }
-                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600"
-                >
-                  + 추가
-                </button>
-              </div>
-              <div className="space-y-3">
-                {draft.photos.map((photo, index) => (
-                  <div key={`photo-${index}`} className="flex gap-3">
-                    <input
-                      value={photo}
-                      onChange={(event) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          photos: updateStringArray(prev.photos, index, event.target.value),
-                        }))
-                      }
-                      className={inputClassName}
-                      placeholder={`이미지 URL ${index + 1}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          photos:
-                            prev.photos.length === 1
-                              ? ['']
-                              : prev.photos.filter((_, valueIndex) => valueIndex !== index),
-                        }))
-                      }
-                      className="rounded-2xl border border-slate-200 px-3 text-sm text-slate-500"
-                    >
-                      삭제
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <ImageUploadArrayField
+                title="대표 이미지"
+                description="모바일 홈, 추천, 상세 화면에 사용할 이미지를 Cloudinary에 업로드합니다."
+                images={draft.photos}
+                onAdd={() =>
+                  setDraft((prev) => ({ ...prev, photos: [...prev.photos, ''] }))
+                }
+                onChange={(index, value) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    photos: updateStringArray(prev.photos, index, value),
+                  }))
+                }
+                onRemove={(index) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    photos:
+                      prev.photos.length === 1
+                        ? ['']
+                        : prev.photos.filter((_, valueIndex) => valueIndex !== index),
+                  }))
+                }
+                customNamePrefix={
+                  draft.seedKey || draft.name ? `mobile-product-${draft.seedKey || draft.name}` : 'mobile-product'
+                }
+                addButtonLabel="+ 이미지 추가"
+                gridClassName="grid-cols-1 sm:grid-cols-2"
+                slotEmptyLabel="대표 이미지"
+                previewAspectClassName="aspect-[4/3]"
+              />
             </div>
 
             <div>
