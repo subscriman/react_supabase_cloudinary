@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { uploadImage, isCloudinaryConfigured } from '../lib/cloudinary';
+import {
+  deleteCloudinaryImage,
+  isCloudinaryConfigured,
+  uploadImage,
+} from '../lib/cloudinary';
 
 interface ImageUploadProps {
   onImageUploaded: (imageUrl: string) => void;
@@ -33,6 +37,7 @@ export default function ImageUpload({
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const previousImageUrl = currentImageUrl || previewUrl || '';
 
     // 파일 타입 검증
     if (!file.type.startsWith('image/')) {
@@ -57,7 +62,12 @@ export default function ImageUpload({
     setUploading(true);
     try {
       const imageUrl = await uploadImage(file, customName);
+      setPreviewUrl(imageUrl);
       onImageUploaded(imageUrl);
+
+      if (previousImageUrl && previousImageUrl !== imageUrl) {
+        void deleteCloudinaryImage(previousImageUrl);
+      }
       
       if (showStatusAlert && isCloudinaryConfigured()) {
         alert('이미지가 성공적으로 업로드되었습니다.');
@@ -77,11 +87,16 @@ export default function ImageUpload({
     fileInputRef.current?.click();
   };
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
+    const removedImageUrl = currentImageUrl || previewUrl || '';
     setPreviewUrl(null);
     onImageUploaded('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+
+    if (removedImageUrl) {
+      await deleteCloudinaryImage(removedImageUrl);
     }
   };
 

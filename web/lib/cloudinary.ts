@@ -4,11 +4,73 @@ export const cloudinaryConfig = {
   uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
 };
 
+const cloudinaryAssetPrefix = 'subscription-manager/';
+
 // Cloudinary 설정 확인
 export const isCloudinaryConfigured = (): boolean => {
   return !!(cloudinaryConfig.cloudName && 
            cloudinaryConfig.uploadPreset && 
            cloudinaryConfig.cloudName !== 'your_cloud_name');
+};
+
+export const isCloudinaryImageUrl = (imageUrl?: string | null): boolean => {
+  if (!imageUrl || imageUrl.startsWith('data:') || !cloudinaryConfig.cloudName) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(imageUrl);
+    return parsed.hostname === 'res.cloudinary.com' &&
+      parsed.pathname.includes(`/${cloudinaryConfig.cloudName}/image/upload/`);
+  } catch {
+    return false;
+  }
+};
+
+export const extractCloudinaryPublicId = (imageUrl: string): string | null => {
+  if (!isCloudinaryImageUrl(imageUrl)) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(imageUrl);
+    const uploadMarker = `/image/upload/`;
+    const uploadIndex = parsed.pathname.indexOf(uploadMarker);
+
+    if (uploadIndex === -1) {
+      return null;
+    }
+
+    const rawPath = parsed.pathname.slice(uploadIndex + uploadMarker.length);
+    const segments = rawPath.split('/').filter(Boolean);
+
+    if (!segments.length) {
+      return null;
+    }
+
+    const folderIndex = segments.findIndex(
+      (segment) => segment === cloudinaryAssetPrefix.replace(/\/$/, '')
+    );
+    const versionIndex = segments.findIndex((segment) => /^v\d+$/.test(segment));
+    const publicIdSegments =
+      folderIndex >= 0
+        ? segments.slice(folderIndex)
+        : versionIndex >= 0
+          ? segments.slice(versionIndex + 1)
+          : segments;
+
+    if (!publicIdSegments.length) {
+      return null;
+    }
+
+    const lastSegment = publicIdSegments[publicIdSegments.length - 1];
+    publicIdSegments[publicIdSegments.length - 1] = lastSegment.replace(/\.[^.]+$/, '');
+
+    const publicId = publicIdSegments.join('/');
+    return publicId.startsWith(cloudinaryAssetPrefix) ? publicId : null;
+  } catch {
+    return null;
+  }
 };
 
 // 이미지 업로드 함수 (클라이언트 전용)
@@ -71,6 +133,35 @@ const uploadImageFallback = async (file: File): Promise<string> => {
     
     reader.readAsDataURL(file);
   });
+};
+
+export const deleteCloudinaryImage = async (imageUrl: string): Promise<boolean> => {
+  const publicId = extractCloudinaryPublicId(imageUrl);
+
+  if (!publicId) {
+    return false;
+  }
+
+  try {
+    const response = await fetch('/api/cloudinary/delete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageUrl }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Cloudinary 삭제 요청에 실패했습니다.');
+    }
+
+    const payload = await response.json();
+    return Boolean(payload.deleted);
+  } catch (error) {
+    console.error('Error deleting image from Cloudinary:', error);
+    return false;
+  }
 };
 
 // 이미지 URL 최적화 함수

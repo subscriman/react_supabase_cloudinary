@@ -170,3 +170,9 @@ Cloudinary는 자동으로 다음 최적화를 수행합니다:
 - Cloudinary URL 형식 확인
 - 이미지 존재 여부 확인
 - 변환 파라미터 유효성 확인
+
+## 9. 현재 구현 메모
+
+- 웹 관리자와 사용자 화면의 이미지 입력은 URL 수동 입력이 아니라 Cloudinary 업로드로 동작합니다.
+- 이미지 교체, 비우기, 이미지 칸 삭제 시에는 `/api/cloudinary/delete`를 통해 `subscription-manager/` 폴더의 원본 이미지를 함께 삭제합니다.
+- Cloudinary 설정이 없거나 Cloudinary URL이 아닌 이미지는 삭제 API 대상에서 제외됩니다.

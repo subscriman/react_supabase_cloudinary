@@ -1,5 +1,5 @@
 import ImageUpload from './ImageUpload';
-import { isCloudinaryConfigured } from '../lib/cloudinary';
+import { deleteCloudinaryImage, isCloudinaryConfigured } from '../lib/cloudinary';
 
 interface ImageUploadArrayFieldProps {
   title: string;
@@ -33,6 +33,14 @@ export default function ImageUploadArrayField({
   previewAspectClassName,
 }: ImageUploadArrayFieldProps) {
   const canAdd = images.length < maxImages;
+  const handleRemove = (index: number) => {
+    const imageUrl = images[index];
+    onRemove(index);
+
+    if (imageUrl) {
+      void deleteCloudinaryImage(imageUrl);
+    }
+  };
 
   return (
     <div className={className}>
@@ -77,7 +85,7 @@ export default function ImageUploadArrayField({
               {images.length > 1 ? (
                 <button
                   type="button"
-                  onClick={() => onRemove(index)}
+                  onClick={() => handleRemove(index)}
                   className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
                 >
                   칸 삭제
