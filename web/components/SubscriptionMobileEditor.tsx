@@ -354,6 +354,7 @@ export default function SubscriptionMobileEditor({
         onChange={onUpdatePhoto}
         onRemove={onRemovePhotoField}
         customNamePrefix={`mobile-editor-${draft.id}`}
+        uploadFolderPath={`user-attachments/mobile/${draft.productType.toLowerCase()}`}
         addButtonLabel="+ 추가"
         gridClassName="grid-cols-2"
         slotEmptyLabel="첨부 이미지"

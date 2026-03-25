@@ -10,6 +10,7 @@ interface ImageUploadArrayFieldProps {
   onRemove: (index: number) => void;
   maxImages?: number;
   customNamePrefix?: string;
+  uploadFolderPath?: string;
   addButtonLabel?: string;
   gridClassName?: string;
   className?: string;
@@ -26,6 +27,7 @@ export default function ImageUploadArrayField({
   onRemove,
   maxImages = 10,
   customNamePrefix = 'subscription-image',
+  uploadFolderPath,
   addButtonLabel = '이미지 추가',
   gridClassName = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
   className = '',
@@ -74,6 +76,7 @@ export default function ImageUploadArrayField({
               currentImageUrl={imageUrl}
               onImageUploaded={(nextUrl) => onChange(index, nextUrl)}
               customName={`${customNamePrefix}-${index + 1}`}
+              folderPath={uploadFolderPath}
               variant="tile"
               emptyLabel={`${slotEmptyLabel} ${index + 1}`}
               showStatusAlert={false}

@@ -10,6 +10,7 @@ interface ImageUploadProps {
   currentImageUrl?: string;
   className?: string;
   customName?: string; // 커스텀 파일명
+  folderPath?: string;
   variant?: 'default' | 'tile';
   emptyLabel?: string;
   showStatusAlert?: boolean;
@@ -21,6 +22,7 @@ export default function ImageUpload({
   currentImageUrl, 
   className = '',
   customName,
+  folderPath,
   variant = 'default',
   emptyLabel = 'IMG',
   showStatusAlert = true,
@@ -61,7 +63,7 @@ export default function ImageUpload({
     // Cloudinary에 업로드
     setUploading(true);
     try {
-      const imageUrl = await uploadImage(file, customName);
+      const imageUrl = await uploadImage(file, customName, folderPath);
       setPreviewUrl(imageUrl);
       onImageUploaded(imageUrl);
 

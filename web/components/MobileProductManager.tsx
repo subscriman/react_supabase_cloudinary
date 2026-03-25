@@ -1182,6 +1182,7 @@ export default function MobileProductManager({
                 customNamePrefix={
                   draft.seedKey || draft.name ? `mobile-product-${draft.seedKey || draft.name}` : 'mobile-product'
                 }
+                uploadFolderPath={`products/mobile/${draft.productType.toLowerCase()}`}
                 addButtonLabel="+ 이미지 추가"
                 gridClassName="grid-cols-1 sm:grid-cols-2"
                 slotEmptyLabel="대표 이미지"

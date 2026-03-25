@@ -858,6 +858,7 @@ export default function SubscriptionDesktopEditor({
                               onRemoveTrackerPhotoField(tracker.id, photoIndex)
                             }
                             customNamePrefix={`tracker-${draft.id}-${tracker.id}`}
+                            uploadFolderPath={`trackers/${draft.productType.toLowerCase()}`}
                             addButtonLabel="이미지 추가"
                             gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
                             slotEmptyLabel="트래커 이미지"
@@ -916,6 +917,7 @@ export default function SubscriptionDesktopEditor({
             onChange={onUpdatePhoto}
             onRemove={onRemovePhotoField}
             customNamePrefix={`subscription-${draft.id}`}
+            uploadFolderPath={`user-attachments/desktop/${draft.productType.toLowerCase()}`}
             addButtonLabel="이미지 추가"
             gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
             slotEmptyLabel="첨부 이미지"

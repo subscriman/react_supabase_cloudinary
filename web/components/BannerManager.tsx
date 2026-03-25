@@ -183,6 +183,7 @@ export default function BannerManager() {
               currentImageUrl={formData.image_url}
               onImageUploaded={(imageUrl) => setFormData({ ...formData, image_url: imageUrl })}
               customName={formData.title ? `banner-${formData.title}` : 'banner'}
+              folderPath="banners"
               className="mb-4"
             />
           </div>

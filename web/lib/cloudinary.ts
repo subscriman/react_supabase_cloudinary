@@ -13,6 +13,27 @@ export const isCloudinaryConfigured = (): boolean => {
            cloudinaryConfig.cloudName !== 'your_cloud_name');
 };
 
+const sanitizeCloudinarySegment = (value: string): string => {
+  return value
+    .trim()
+    .replace(/[^a-zA-Z0-9가-힣-_]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+};
+
+const sanitizeCloudinaryFolderPath = (folderPath?: string): string => {
+  if (!folderPath) {
+    return '';
+  }
+
+  return folderPath
+    .split('/')
+    .map((segment) => sanitizeCloudinarySegment(segment))
+    .filter(Boolean)
+    .join('/');
+};
+
 export const isCloudinaryImageUrl = (imageUrl?: string | null): boolean => {
   if (!imageUrl || imageUrl.startsWith('data:') || !cloudinaryConfig.cloudName) {
     return false;
@@ -74,7 +95,11 @@ export const extractCloudinaryPublicId = (imageUrl: string): string | null => {
 };
 
 // 이미지 업로드 함수 (클라이언트 전용)
-export const uploadImage = async (file: File, customName?: string): Promise<string> => {
+export const uploadImage = async (
+  file: File,
+  customName?: string,
+  folderPath?: string
+): Promise<string> => {
   // Cloudinary 설정 확인
   if (!isCloudinaryConfigured()) {
     console.warn('Cloudinary가 설정되지 않았습니다. Base64 데이터 URL을 사용합니다.');
@@ -88,8 +113,13 @@ export const uploadImage = async (file: File, customName?: string): Promise<stri
   // 의미있는 파일명 생성 (폴더는 Upload Preset에서 자동 추가됨)
   if (customName) {
     const timestamp = Date.now();
-    const cleanName = customName.replace(/[^a-zA-Z0-9가-힣]/g, '-').toLowerCase();
-    formData.append('public_id', `${cleanName}-${timestamp}`);
+    const cleanName = sanitizeCloudinarySegment(customName);
+    const cleanFolderPath = sanitizeCloudinaryFolderPath(folderPath);
+    const publicId =
+      cleanFolderPath.length > 0
+        ? `${cleanFolderPath}/${cleanName}-${timestamp}`
+        : `${cleanName}-${timestamp}`;
+    formData.append('public_id', publicId);
   }
 
   try {
