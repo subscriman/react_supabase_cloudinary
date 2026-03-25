@@ -143,7 +143,7 @@ export const deleteCloudinaryImage = async (imageUrl: string): Promise<boolean> 
   }
 
   try {
-    const response = await fetch('/api/cloudinary/delete', {
+    const response = await fetch('/api/cloudinary/delete/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
