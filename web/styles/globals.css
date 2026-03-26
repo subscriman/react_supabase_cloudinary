@@ -41,19 +41,19 @@ body {
 
 .mobile-theme {
   --m-shade-01: #ffffff;
-  --m-shade-02: #222222;
-  --m-shade-02-05: rgba(34, 34, 34, 0.05);
-  --m-shade-02-30: rgba(34, 34, 34, 0.3);
-  --m-neutral-01: #f7f7f7;
-  --m-neutral-02: #ebebeb;
-  --m-neutral-03: #dddddd;
-  --m-neutral-04: #d3d3d3;
+  --m-shade-02: #111111;
+  --m-shade-02-05: rgba(17, 17, 17, 0.05);
+  --m-shade-02-30: rgba(17, 17, 17, 0.3);
+  --m-neutral-01: #fdfdfd;
+  --m-neutral-02: #f5f5f5;
+  --m-neutral-03: #e6e6e6;
+  --m-neutral-04: #dadada;
   --m-neutral-05: #c2c2c2;
-  --m-neutral-06: #b0b0b0;
-  --m-neutral-07: #717171;
-  --m-neutral-08: #5e5e5e;
+  --m-neutral-06: #969696;
+  --m-neutral-07: #6a6a6a;
+  --m-neutral-08: #444444;
   --m-primary-01: #f6475f;
-  --m-primary-02: #ff385c;
+  --m-primary-02: #f83758;
   --m-primary-gradient: linear-gradient(
     135deg,
     var(--m-primary-01) 0%,
@@ -61,11 +61,19 @@ body {
   );
   --m-error-01: #fef8f6;
   --m-error-02: #c13515;
-  --m-accent-01: #f6d7df;
+  --m-accent-01: #f8d5de;
   --m-accent-02: #d03660;
   --m-discount: #008a05;
   --m-link: #004cc4;
   --brand-coral: var(--m-primary-02);
+  font-family:
+    "Montserrat",
+    "Avenir Next",
+    "SUIT Variable",
+    "Pretendard Variable",
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    sans-serif;
 }
 
 .mobile-theme {

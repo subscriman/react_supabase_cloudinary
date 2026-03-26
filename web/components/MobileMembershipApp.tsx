@@ -69,7 +69,13 @@ const mobileNavItems: Array<{ id: MobileTab; label: string }> = [
 ];
 
 const inputClassName =
-  'w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[var(--m-primary-02)] focus:ring-4 focus:ring-[rgba(255,56,92,0.12)]';
+  'w-full rounded-[10px] border border-[rgba(17,17,17,0.14)] bg-white px-3 py-3 text-[14px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[var(--m-primary-02)] focus:ring-2 focus:ring-[rgba(248,55,88,0.12)]';
+
+const mobilePanelClass =
+  'rounded-[16px] border border-[rgba(17,17,17,0.12)] bg-white shadow-[0_8px_24px_rgba(17,17,17,0.04)]';
+
+const mobileInsetClass =
+  'rounded-[12px] border border-[rgba(17,17,17,0.1)] bg-[#f8f8f8]';
 
 function cloneConfig(config: UserMembershipConfig): UserMembershipConfig {
   return {
@@ -101,6 +107,27 @@ function formatDateTime(value: string) {
 function formatDateLabel(value: string) {
   const date = new Date(value);
   return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function formatDateValue(value: string) {
+  if (!value) return '미입력';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatCurrencyValue(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '미입력';
+  }
+
+  return `${new Intl.NumberFormat('ko-KR').format(value)}원`;
 }
 
 function isSameCycle(
@@ -185,6 +212,16 @@ function buildTypeBModuleSummary(draft: UserMembershipConfig) {
   }
 
   return parts.join(', ') || '조건 확인 필요';
+}
+
+function buildDetailSummaryRows(draft: UserMembershipConfig) {
+  return [
+    { label: '상품', value: draft.selectedTier || '기본 플랜' },
+    { label: '결제주기', value: paymentCycleLabels[draft.billingCycle] },
+    { label: '결제금액', value: formatCurrencyValue(draft.price) },
+    { label: '결제일', value: formatDateValue(draft.paymentDate) },
+    { label: '시작일', value: formatDateValue(draft.startedAt) },
+  ];
 }
 
 function getPreviewImage(
@@ -352,7 +389,7 @@ function MobileCalendarPanel({
   };
 
   return (
-    <div className="rounded-[24px] border border-slate-300 bg-white p-4">
+    <div className={`${mobilePanelClass} p-4`}>
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -363,11 +400,13 @@ function MobileCalendarPanel({
               return { year: nextYear, month: nextMonth };
             })
           }
-          className="rounded-full px-3 py-2 text-sm text-slate-600"
+          className="rounded-[10px] border border-[rgba(17,17,17,0.1)] px-3 py-2 text-sm text-slate-600"
         >
           ←
         </button>
-        <p className="text-sm font-semibold text-slate-900">{visibleMonthLabel}</p>
+        <p className="text-sm font-semibold tracking-[-0.02em] text-slate-900">
+          {visibleMonthLabel}
+        </p>
         <button
           type="button"
           onClick={() =>
@@ -377,7 +416,7 @@ function MobileCalendarPanel({
               return { year: nextYear, month: nextMonth };
             })
           }
-          className="rounded-full px-3 py-2 text-sm text-slate-600"
+          className="rounded-[10px] border border-[rgba(17,17,17,0.1)] px-3 py-2 text-sm text-slate-600"
         >
           →
         </button>
@@ -408,7 +447,7 @@ function MobileCalendarPanel({
                 isSelected
                   ? 'bg-[var(--m-primary-02)] text-white'
                   : hasRecords
-                    ? 'bg-[var(--m-accent-01)] text-slate-900'
+                    ? 'bg-[rgba(248,55,88,0.12)] text-slate-900'
                     : 'text-slate-600'
               }`}
             >
@@ -426,7 +465,7 @@ function MobileCalendarPanel({
       </div>
 
       {showRecordsPanel ? (
-        <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className={`mt-4 ${mobileInsetClass} px-4 py-3`}>
           {selectedDateKey ? (
             <>
               <p className="text-sm font-semibold text-slate-900">
@@ -537,6 +576,9 @@ function MobileDetailView({
     draft.productType === 'D' && selectedCalendarDateKey
       ? draft.calendarEntries.find((entry) => entry.dateKey === selectedCalendarDateKey) || null
       : null;
+  const summaryRows = useMemo(() => buildDetailSummaryRows(draft), [draft]);
+  const actionLabel = detail.source === 'saved' ? '수정 저장' : '개인 설정 저장';
+  const detailHeaderTitle = detail.source === 'saved' ? '내 구독' : '상품 상세';
 
   useEffect(() => {
     setShowCalendar(false);
@@ -566,21 +608,23 @@ function MobileDetailView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-slate-400 bg-[var(--m-shade-02)] px-4 py-3 text-white">
+      <div className="border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4 text-slate-900">
         <div className="flex items-center justify-between">
-          <button type="button" onClick={onBack} className="text-lg leading-none">
+          <button type="button" onClick={onBack} className="text-lg leading-none text-slate-900">
             ←
           </button>
-          <p className="text-sm font-medium">{draft.displayName || 'title'}</p>
+          <p className="text-[18px] font-semibold tracking-[-0.02em]">
+            {detailHeaderTitle}
+          </p>
           <span className="w-5" />
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--m-neutral-01)] px-4 pb-28 pt-4">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[#fdfdfd] px-4 pb-36 pt-4">
         <div className="space-y-4">
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <div className="grid grid-cols-[92px,minmax(0,1fr)] gap-4">
-              <div className="flex h-24 items-center justify-center overflow-hidden rounded-[22px] border border-slate-300 bg-[var(--m-neutral-01)] text-xs text-slate-500">
+          <section className={`${mobilePanelClass} p-4`}>
+            <div className="grid grid-cols-[120px,minmax(0,1fr)] gap-4">
+              <div className="flex h-[152px] items-center justify-center overflow-hidden rounded-[6px] border border-[rgba(17,17,17,0.12)] bg-[#f5f5f5] text-xs text-slate-500">
                 {previewImage ? (
                   <img
                     src={previewImage}
@@ -592,28 +636,34 @@ function MobileDetailView({
                 )}
               </div>
               <div className="min-w-0">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--m-primary-02)]">
+                  {draft.provider || 'Subscriman'}
+                </p>
                 <input
                   value={draft.displayName}
                   onChange={(event) => onUpdateDraft('displayName', event.target.value)}
-                  className="w-full border-none bg-transparent p-0 text-[28px] font-semibold leading-tight text-slate-900 outline-none"
+                  className="mt-2 w-full border-none bg-transparent p-0 text-[26px] font-semibold leading-[1.1] tracking-[-0.03em] text-slate-900 outline-none"
                 />
-                <p className="mt-3 text-sm text-slate-500">{draft.provider}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-500">{draft.description}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-[999px] border border-[rgba(17,17,17,0.12)] px-3 py-1 text-[11px] font-medium text-slate-600">
+                    {draft.productType} 타입
+                  </span>
+                  <span className="rounded-[999px] border border-[rgba(17,17,17,0.12)] px-3 py-1 text-[11px] font-medium text-slate-600">
+                    {paymentCycleLabels[draft.billingCycle]}
+                  </span>
+                </div>
               </div>
             </div>
           </section>
 
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <p className="text-base font-semibold text-slate-900">상품설명</p>
-            <textarea
-              value={draft.description}
-              onChange={(event) => onUpdateDraft('description', event.target.value)}
-              rows={4}
-              className={`${inputClassName} mt-3`}
-            />
-          </section>
-
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <p className="text-base font-semibold text-slate-900">공식 안내 URL</p>
+          <section className={`${mobilePanelClass} p-4`}>
+            <div className="flex items-center justify-between">
+              <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                상품 정보
+              </p>
+              <p className="text-[12px] font-medium text-[var(--m-primary-02)]">링크 확인</p>
+            </div>
             <div className="mt-3 space-y-3">
               {draft.sourceUrls.length ? (
                 draft.sourceUrls.map((url, index) => (
@@ -622,32 +672,57 @@ function MobileDetailView({
                     href={url}
                     target="_blank"
                     rel="noreferrer"
-                    className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-[var(--m-link)]"
+                    className={`block ${mobileInsetClass} px-4 py-3 text-sm leading-6 text-[var(--m-link)]`}
                   >
                     {url}
                   </a>
                 ))
               ) : (
-                <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                <p className="rounded-[12px] border border-dashed border-[rgba(17,17,17,0.12)] bg-[#fafafa] px-4 py-4 text-sm text-slate-500">
                   연결된 공식 안내 URL이 없습니다.
                 </p>
               )}
             </div>
+            <textarea
+              value={draft.description}
+              onChange={(event) => onUpdateDraft('description', event.target.value)}
+              rows={4}
+              className={`${inputClassName} mt-4`}
+              placeholder="상품 설명을 입력하세요."
+            />
+          </section>
+
+          <section className={`${mobilePanelClass} overflow-hidden`}>
+            <div className="border-b border-[rgba(17,17,17,0.08)] px-4 py-4">
+              <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                결제 및 이용 요약
+              </p>
+            </div>
+            <div className="divide-y divide-[rgba(17,17,17,0.08)] px-4">
+              {summaryRows.map((row) => (
+                <div key={`${draft.id}-${row.label}`} className="flex items-center justify-between py-3">
+                  <span className="text-[15px] text-slate-600">{row.label}</span>
+                  <span className="text-[15px] font-semibold text-slate-900">{row.value}</span>
+                </div>
+              ))}
+            </div>
           </section>
 
           {draft.productType === 'B' ? (
-            <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+            <section className={`${mobilePanelClass} p-4`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-base font-semibold text-slate-900">사용 체크 관리</p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                    사용 체크 관리
+                  </p>
+                  <p className="mt-1 text-[12px] text-slate-500">
                     {buildTypeBModuleSummary(draft)}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowCalendar((prev) => !prev)}
-                  className="rounded-full border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700"
+                  className="rounded-[10px] border border-[rgba(17,17,17,0.12)] px-3 py-2 text-xs font-medium text-slate-700"
                 >
                   월별 기록
                 </button>
@@ -662,10 +737,10 @@ function MobileDetailView({
                     return (
                       <label
                         key={`${draft.id}-mobile-b-slot-${slotIndex}`}
-                        className={`flex items-center justify-between rounded-[22px] border px-4 py-3 ${
+                        className={`flex items-center justify-between rounded-[12px] border px-4 py-3 ${
                           entry
-                            ? 'border-[rgba(42,157,143,0.28)] bg-[rgba(42,157,143,0.06)]'
-                            : 'border-slate-200 bg-slate-50'
+                            ? 'border-[rgba(248,55,88,0.24)] bg-[rgba(248,55,88,0.06)]'
+                            : 'border-[rgba(17,17,17,0.08)] bg-[#fafafa]'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -713,18 +788,20 @@ function MobileDetailView({
           ) : null}
 
           {draft.productType === 'C' ? (
-            <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+            <section className={`${mobilePanelClass} p-4`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-base font-semibold text-slate-900">사용 체크 관리</p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                    사용 체크 관리
+                  </p>
+                  <p className="mt-1 text-[12px] text-slate-500">
                     체크형 혜택과 정보형 혜택을 분리해서 보여줍니다.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowCalendar((prev) => !prev)}
-                  className="rounded-full border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700"
+                  className="rounded-[10px] border border-[rgba(17,17,17,0.12)] px-3 py-2 text-xs font-medium text-slate-700"
                 >
                   월별 기록
                 </button>
@@ -749,7 +826,7 @@ function MobileDetailView({
                     return (
                       <div
                         key={tracker.id}
-                        className="rounded-[22px] border border-slate-200 bg-slate-50 p-4"
+                        className={`${mobileInsetClass} p-4`}
                       >
                         <p className="text-sm font-semibold text-slate-900">
                           {tracker.title}
@@ -764,9 +841,9 @@ function MobileDetailView({
                   return (
                     <div
                       key={tracker.id}
-                      className="rounded-[22px] border border-slate-200 bg-slate-50 p-4"
+                      className={`${mobileInsetClass} p-4`}
                     >
-                      <div className="rounded-2xl border border-white bg-white px-4 py-3">
+                      <div className="rounded-[10px] border border-white bg-white px-4 py-3">
                         <div className="flex items-start justify-between gap-3">
                           <label className="flex min-w-0 flex-1 items-start gap-3">
                             <input
@@ -807,7 +884,7 @@ function MobileDetailView({
                               <button
                                 type="button"
                                 onClick={() => onAddTrackerEntry(tracker.id)}
-                                className="rounded-full border border-slate-200 px-3 py-1 text-[11px] text-slate-600"
+                                className="rounded-[999px] border border-[rgba(17,17,17,0.12)] px-3 py-1 text-[11px] text-slate-600"
                               >
                                 + 기록
                               </button>
@@ -829,10 +906,12 @@ function MobileDetailView({
           ) : null}
 
           {draft.productType === 'D' ? (
-            <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+            <section className={`${mobilePanelClass} p-4`}>
               <div>
-                <p className="text-base font-semibold text-slate-900">사용 체크 관리</p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                  사용 체크 관리
+                </p>
+                <p className="mt-1 text-[12px] text-slate-500">
                   캘린더에서 날짜를 고르고 사용 메모를 저장하는 타입 D 화면입니다.
                 </p>
               </div>
@@ -846,7 +925,7 @@ function MobileDetailView({
                 />
               </div>
 
-              <div className="mt-4 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+              <div className={`mt-4 ${mobileInsetClass} p-4`}>
                 <p className="text-sm font-semibold text-slate-900">
                   {selectedCalendarDateKey
                     ? formatDateLabel(selectedCalendarDateKey)
@@ -879,7 +958,7 @@ function MobileDetailView({
 
                     onSaveCalendarEntry(selectedCalendarDateKey, calendarNoteDraft);
                   }}
-                  className="mt-3 w-full rounded-[20px] bg-[var(--m-primary-02)] px-4 py-3 text-sm font-medium text-white"
+                  className="mt-3 w-full rounded-[10px] bg-[var(--m-primary-02)] px-4 py-3 text-sm font-medium text-white"
                 >
                   저장
                 </button>
@@ -887,8 +966,10 @@ function MobileDetailView({
             </section>
           ) : null}
 
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <p className="text-base font-semibold text-slate-900">사용자 메모</p>
+          <section className={`${mobilePanelClass} p-4`}>
+            <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+              사용자 메모
+            </p>
             <textarea
               value={draft.userMemo}
               onChange={(event) => onUpdateDraft('userMemo', event.target.value)}
@@ -898,7 +979,7 @@ function MobileDetailView({
             />
           </section>
 
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
+          <section className={`${mobilePanelClass} p-4`}>
             <ImageUploadArrayField
               title="첨부 이미지"
               description="상품별로 참고할 이미지를 Cloudinary에 업로드해 저장합니다."
@@ -914,9 +995,22 @@ function MobileDetailView({
             />
           </section>
 
-          <section className="rounded-[26px] border border-slate-300 bg-white p-4">
-            <p className="text-base font-semibold text-slate-900">결제정보</p>
+          <section className={`${mobilePanelClass} p-4`}>
+            <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+              결제정보
+            </p>
             <div className="mt-4 grid gap-3">
+              <div className={`${mobileInsetClass} px-4 py-4`}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  Payment
+                </p>
+                <p className="mt-2 text-[16px] font-semibold text-slate-900">
+                  {paymentMethodLabels[draft.paymentMethodType]}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {draft.paymentMethodLabel || '카드명 또는 계좌명 미입력'}
+                </p>
+              </div>
               <input
                 value={draft.selectedTier}
                 onChange={(event) => onUpdateDraft('selectedTier', event.target.value)}
@@ -993,23 +1087,26 @@ function MobileDetailView({
               </div>
             </div>
           </section>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={onBack}
-              className="rounded-[22px] border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700"
-            >
-              취소
-            </button>
-            <button
-              type="button"
-              onClick={onSave}
-              className="rounded-[22px] bg-[var(--m-primary-02)] px-4 py-3 text-sm font-medium text-white"
-            >
-              {detail.source === 'saved' ? '수정 저장' : '개인 설정 저장'}
-            </button>
+      <div className="sticky bottom-0 z-20 border-t border-[rgba(17,17,17,0.08)] bg-white px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1 pl-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              Summary
+            </p>
+            <p className="mt-1 truncate text-[18px] font-semibold tracking-[-0.02em] text-slate-900">
+              {formatCurrencyValue(draft.price)}
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={onSave}
+            className="rounded-[10px] bg-[var(--m-primary-02)] px-5 py-3 text-sm font-medium text-white"
+          >
+            {actionLabel}
+          </button>
         </div>
       </div>
     </div>
@@ -1578,32 +1675,39 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
         key={preset.seedKey}
         type="button"
         onClick={() => openPresetDetail(preset)}
-        className={`w-full rounded-[28px] border border-slate-300 bg-white p-4 text-left shadow-sm transition ${
-          emphasis ? 'min-h-[260px]' : 'min-h-[220px]'
+        className={`w-full border border-[rgba(17,17,17,0.12)] bg-white p-4 text-left shadow-[0_8px_24px_rgba(17,17,17,0.04)] transition ${
+          emphasis ? 'rounded-[16px]' : 'rounded-[14px]'
         }`}
       >
-        <p className="text-[29px] font-semibold leading-tight text-slate-900">
-          {preset.name}
-        </p>
-        <p className="mt-1 text-lg text-slate-600">{preset.description}</p>
-        <div className="mt-5 flex min-h-[140px] items-center justify-center overflow-hidden rounded-[24px] border border-slate-300 bg-[var(--m-neutral-01)] text-center text-2xl text-slate-500">
-          {image ? (
-            <img src={image} alt={preset.name} className="h-full w-full object-cover" />
-          ) : (
-            <div className="px-6 leading-snug">
+        <div className="grid grid-cols-[108px,minmax(0,1fr)] gap-4">
+          <div className="flex h-[136px] items-center justify-center overflow-hidden rounded-[6px] border border-[rgba(17,17,17,0.12)] bg-[#f5f5f5] text-center text-sm text-slate-500">
+            {image ? (
+              <img src={image} alt={preset.name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="px-3 leading-snug">
+                {preset.name}
+                <br />
+                안내 이미지
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--m-primary-02)]">
+              {preset.provider}
+            </p>
+            <p className="mt-2 text-[24px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900">
               {preset.name}
-              <br />
-              안내 이미지
-            </div>
-          )}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-slate-600">{preset.description}</p>
+          </div>
         </div>
       </button>
     );
   };
 
   return (
-    <div className="mobile-theme min-h-screen bg-[var(--m-neutral-02)] py-0 text-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-[430px] flex-col overflow-hidden border-x border-slate-300 bg-[var(--m-neutral-01)] shadow-[0_24px_80px_rgba(34,34,34,0.14)]">
+    <div className="mobile-theme min-h-screen bg-[#ececec] py-0 text-slate-900">
+      <div className="mx-auto flex min-h-screen max-w-[393px] flex-col overflow-hidden border-x border-[rgba(17,17,17,0.08)] bg-[#fdfdfd] shadow-[0_24px_80px_rgba(17,17,17,0.12)]">
         {detail ? (
           <MobileDetailView
             detail={detail}
@@ -1622,21 +1726,23 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto pb-28">
             {categoryView ? (
-              <div className="border-b border-slate-400 bg-[var(--m-shade-02)] px-4 py-3 text-white">
+              <div className="border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4 text-slate-900">
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => setCategoryView(null)}
-                    className="text-lg leading-none"
+                    className="text-lg leading-none text-slate-900"
                   >
                     ←
                   </button>
-                  <p className="text-lg font-medium">{categoryView.title}</p>
+                  <p className="text-[18px] font-semibold tracking-[-0.02em]">
+                    {categoryView.title}
+                  </p>
                   <span className="w-5" />
                 </div>
               </div>
             ) : (
-              <div className="border-b border-slate-400 bg-[var(--m-shade-02)] px-4 py-4 text-center text-2xl font-medium text-white">
+              <div className="border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-5 text-center text-[22px] font-semibold tracking-[-0.03em] text-slate-900">
                 {activeTab === 'home'
                   ? '구독관리'
                   : activeTab === 'recommend'
@@ -1649,7 +1755,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
 
             {statusMessage ? (
               <div className="px-4 pt-4">
-                <div className="rounded-[20px] border border-[var(--m-accent-01)] bg-[var(--m-error-01)] px-4 py-3 text-sm text-[var(--m-shade-02)]">
+                <div className="rounded-[12px] border border-[rgba(248,55,88,0.16)] bg-[rgba(248,55,88,0.06)] px-4 py-3 text-sm text-[var(--m-shade-02)]">
                   {statusMessage}
                 </div>
               </div>
@@ -1657,7 +1763,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
 
             {categoryView ? (
               <div className="space-y-5 px-4 py-5">
-                <div className="rounded-[24px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600">
+                <div className="rounded-[12px] border border-[rgba(17,17,17,0.08)] bg-white px-4 py-3 text-sm text-slate-600">
                   {activeCategorySection
                     ? `${activeCategorySection.title} 카테고리 상품 ${activeCategorySection.items.length}개`
                     : '선택한 카테고리 상품을 불러오는 중입니다.'}
@@ -1666,7 +1772,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                 {activeCategorySection?.items.length ? (
                   activeCategorySection.items.map((preset) => renderPreviewCard(preset, true))
                 ) : (
-                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-white px-5 py-10 text-center text-sm text-slate-500">
+                  <div className="rounded-[14px] border border-dashed border-[rgba(17,17,17,0.12)] bg-white px-5 py-10 text-center text-sm text-slate-500">
                     이 카테고리에 표시할 상품이 아직 없습니다.
                   </div>
                 )}
@@ -1696,10 +1802,10 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                     <button
                       type="button"
                       onClick={() => openPresetDetail(featuredPresets[featuredIndex])}
-                          className="w-full rounded-[30px] border border-slate-300 bg-white p-4 text-left shadow-sm"
+                      className="w-full rounded-[16px] border border-[rgba(17,17,17,0.12)] bg-white p-4 text-left shadow-[0_10px_28px_rgba(17,17,17,0.05)]"
                     >
                       <div className="grid grid-cols-[116px,minmax(0,1fr)] gap-4">
-                        <div className="flex h-28 items-center justify-center overflow-hidden rounded-[22px] border border-slate-300 bg-[var(--m-neutral-01)] text-sm text-slate-500">
+                        <div className="flex h-[132px] items-center justify-center overflow-hidden rounded-[6px] border border-[rgba(17,17,17,0.12)] bg-[#f5f5f5] text-sm text-slate-500">
                           {getPreviewImage(featuredPresets[featuredIndex], null) ? (
                             <img
                               src={getPreviewImage(featuredPresets[featuredIndex], null)}
@@ -1711,10 +1817,13 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-4xl font-semibold leading-tight text-slate-900">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--m-primary-02)]">
+                            Featured
+                          </p>
+                          <p className="mt-2 text-[28px] font-semibold leading-[1.04] tracking-[-0.03em] text-slate-900">
                             {featuredPresets[featuredIndex].name}
                           </p>
-                          <p className="mt-3 text-lg leading-7 text-slate-600">
+                          <p className="mt-3 text-[15px] leading-6 text-slate-600">
                             {featuredPresets[featuredIndex].description}
                           </p>
                         </div>
@@ -1742,7 +1851,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                 {homeSections.map((section) => (
                   <section key={section.id}>
                     <div className="flex items-center justify-between">
-                      <h2 className="text-[32px] font-semibold leading-tight text-slate-900">
+                      <h2 className="text-[26px] font-semibold leading-tight tracking-[-0.03em] text-slate-900">
                         {section.title}
                       </h2>
                       <button
@@ -1764,11 +1873,25 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                           key={preset.seedKey}
                           type="button"
                           onClick={() => openPresetDetail(preset)}
-                          className="min-w-[164px] rounded-[26px] border border-slate-300 bg-white p-4 text-left shadow-sm"
+                          className="min-w-[168px] rounded-[14px] border border-[rgba(17,17,17,0.12)] bg-white p-3 text-left shadow-[0_8px_20px_rgba(17,17,17,0.04)]"
                         >
-                          <div className="flex h-32 items-center justify-center rounded-[22px] border border-slate-300 bg-[var(--m-neutral-01)] text-lg font-medium text-slate-600">
-                            {preset.name}
+                          <div className="flex h-28 items-center justify-center overflow-hidden rounded-[6px] border border-[rgba(17,17,17,0.12)] bg-[#f5f5f5] text-lg font-medium text-slate-600">
+                            {getPreviewImage(preset, null) ? (
+                              <img
+                                src={getPreviewImage(preset, null)}
+                                alt={preset.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              preset.name
+                            )}
                           </div>
+                          <p className="mt-3 text-[15px] font-semibold leading-snug text-slate-900">
+                            {preset.name}
+                          </p>
+                          <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                            {preset.provider}
+                          </p>
                         </button>
                       ))}
                     </div>
@@ -1791,10 +1914,10 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                       key={filter.id}
                       type="button"
                       onClick={() => setActiveFilter(filter.id)}
-                      className={`whitespace-nowrap rounded-2xl border px-4 py-2 text-sm transition ${
+                      className={`whitespace-nowrap rounded-[999px] border px-4 py-2 text-sm transition ${
                         activeFilter === filter.id
-                          ? 'border-[var(--m-primary-02)] bg-[var(--m-primary-02)] text-white'
-                          : 'border-slate-300 bg-white text-slate-700'
+                          ? 'border-[var(--m-primary-02)] bg-[rgba(248,55,88,0.08)] text-[var(--m-primary-02)]'
+                          : 'border-[rgba(17,17,17,0.12)] bg-white text-slate-700'
                       }`}
                     >
                       {filter.label}
@@ -1812,9 +1935,9 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                         key={config.id}
                         type="button"
                         onClick={() => openSavedDetail(config)}
-                        className="flex w-full items-center gap-4 rounded-[24px] border border-slate-300 bg-white p-4 text-left shadow-sm"
+                        className="flex w-full items-center gap-4 rounded-[16px] border border-[rgba(17,17,17,0.12)] bg-white p-4 text-left shadow-[0_8px_24px_rgba(17,17,17,0.04)]"
                       >
-                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[18px] border border-slate-300 bg-[var(--m-neutral-01)] text-xs text-slate-500">
+                        <div className="flex h-[118px] w-[102px] items-center justify-center overflow-hidden rounded-[6px] border border-[rgba(17,17,17,0.12)] bg-[#f5f5f5] text-xs text-slate-500">
                           {getPreviewImage(linkedPreset, config) ? (
                             <img
                               src={getPreviewImage(linkedPreset, config)}
@@ -1826,17 +1949,22 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[30px] font-semibold leading-tight text-slate-900">
+                          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--m-primary-02)]">
+                            {config.provider}
+                          </p>
+                          <p className="mt-2 text-[26px] font-semibold leading-[1.06] tracking-[-0.03em] text-slate-900">
                             {config.displayName}
                           </p>
-                          <p className="mt-2 text-sm text-slate-500">{config.provider}</p>
+                          <p className="mt-3 text-sm text-slate-500">
+                            {formatCurrencyValue(config.price)} · {paymentCycleLabels[config.billingCycle]}
+                          </p>
                         </div>
                       </button>
                     );
                   })}
 
                   {filteredSavedConfigs.length === 0 ? (
-                    <div className="rounded-[24px] border border-dashed border-slate-300 bg-white px-5 py-10 text-center text-sm text-slate-500">
+                    <div className="rounded-[14px] border border-dashed border-[rgba(17,17,17,0.12)] bg-white px-5 py-10 text-center text-sm text-slate-500">
                       아직 저장된 내 구독이 없습니다.
                       <br />
                       홈이나 추천에서 상품을 골라 저장해보세요.
@@ -1848,19 +1976,19 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
 
             {activeTab === 'settings' ? (
               <div className="space-y-4 px-4 py-5">
-                <div className="rounded-[26px] border border-slate-300 bg-white p-4 shadow-sm">
+                <div className={`${mobilePanelClass} p-4`}>
                   <p className="text-base font-semibold text-slate-900">저장 위치</p>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     현재 모바일 샘플은 브라우저에만 저장됩니다.
                   </p>
                 </div>
-                <div className="rounded-[26px] border border-slate-300 bg-white p-4 shadow-sm">
+                <div className={`${mobilePanelClass} p-4`}>
                   <p className="text-base font-semibold text-slate-900">내 구독 개수</p>
                   <p className="mt-2 text-3xl font-semibold text-slate-900">
                     {savedConfigs.length}
                   </p>
                 </div>
-                <div className="rounded-[26px] border border-slate-300 bg-white p-4 shadow-sm">
+                <div className={`${mobilePanelClass} p-4`}>
                   <p className="text-base font-semibold text-slate-900">빠른 이동</p>
                   <div className="mt-4 grid gap-3">
                     <Link
@@ -1877,7 +2005,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                     </Link>
                   </div>
                 </div>
-                <div className="rounded-[26px] border border-slate-300 bg-white p-4 shadow-sm">
+                <div className={`${mobilePanelClass} p-4`}>
                   <p className="text-base font-semibold text-slate-900">안내</p>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     모바일 화면은 현재 앱 흐름 검증용 샘플입니다. 실제 푸시 알림과 이미지
@@ -1889,7 +2017,7 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
           </div>
         )}
 
-        <nav className="sticky bottom-0 z-20 grid grid-cols-4 border-t border-slate-300 bg-white">
+        <nav className="sticky bottom-0 z-20 grid grid-cols-4 border-t border-[rgba(17,17,17,0.08)] bg-white shadow-[0_-8px_24px_rgba(17,17,17,0.05)]">
           {mobileNavItems.map((item) => {
             const isActive = activeTab === item.id && !detail;
 
@@ -1902,9 +2030,9 @@ export default function MobileMembershipApp({ seedData }: MobileMembershipAppPro
                       setCategoryView(null);
                       setActiveTab(item.id);
                     }}
-                    className={`px-2 py-4 text-base font-medium transition ${
+                    className={`px-2 py-4 text-[15px] font-medium transition ${
                   isActive
-                    ? 'bg-[var(--m-accent-01)] text-[var(--m-primary-02)]'
+                    ? 'bg-[rgba(248,55,88,0.08)] text-[var(--m-primary-02)]'
                     : 'text-slate-700'
                 }`}
               >
