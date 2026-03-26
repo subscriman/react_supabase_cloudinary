@@ -725,10 +725,10 @@ function MobileDetailView({
           </section>
 
           {draft.productType === 'B' ? (
-            <section className={`${mobilePanelClass} p-4`}>
-              <div className="flex items-center justify-between">
+            <section className="border-y border-[rgba(17,17,17,0.1)] bg-white">
+              <div className="flex items-center justify-between px-4 py-4">
                 <div>
-                  <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                  <p className="text-[17px] font-medium tracking-[-0.02em] text-slate-900">
                     사용 체크 관리
                   </p>
                   <p className="mt-1 text-[12px] text-slate-500">
@@ -738,13 +738,13 @@ function MobileDetailView({
                 <button
                   type="button"
                   onClick={() => setShowCalendar((prev) => !prev)}
-                  className="rounded-[10px] border border-[rgba(17,17,17,0.12)] px-3 py-2 text-xs font-medium text-slate-700"
+                  className="text-[13px] font-semibold text-[var(--m-primary-02)]"
                 >
                   월별 기록
                 </button>
               </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="border-t border-[rgba(17,17,17,0.08)] px-4 py-2">
                 {Array.from({ length: draft.customRules.annualLimit || 6 }).map(
                   (_, slotIndex) => {
                     const entry = draft.usageEntries[slotIndex];
@@ -753,11 +753,7 @@ function MobileDetailView({
                     return (
                       <label
                         key={`${draft.id}-mobile-b-slot-${slotIndex}`}
-                        className={`flex items-center justify-between rounded-[12px] border px-4 py-3 ${
-                          entry
-                            ? 'border-[rgba(248,55,88,0.24)] bg-[rgba(248,55,88,0.06)]'
-                            : 'border-[rgba(17,17,17,0.08)] bg-[#fafafa]'
-                        }`}
+                        className="flex items-center justify-between border-b border-[rgba(17,17,17,0.08)] py-3 last:border-b-0"
                       >
                         <div className="flex items-center gap-3">
                           <input
@@ -771,7 +767,11 @@ function MobileDetailView({
                             사용 {slotIndex + 1}
                           </p>
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p
+                          className={`text-xs ${
+                            entry ? 'font-medium text-[var(--m-primary-02)]' : 'text-slate-500'
+                          }`}
+                        >
                           {entry ? formatDateTime(entry.checkedAt) : '미기록'}
                         </p>
                       </label>
@@ -781,16 +781,16 @@ function MobileDetailView({
               </div>
 
               {showCalendar ? (
-                <div className="mt-4 space-y-3">
+                <div className="border-t border-[rgba(17,17,17,0.08)] px-4 py-4">
                   <MobileCalendarPanel records={usageCalendarRecords} />
                   {draft.usageEntries.length ? (
-                    <div className="space-y-2">
+                    <div className="mt-3 space-y-2">
                       {draft.usageEntries.map((entry) => (
                         <button
                           key={entry.id}
                           type="button"
                           onClick={() => onRemoveUsageEntry(entry.id)}
-                          className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                          className="flex w-full items-center justify-between rounded-[10px] border border-[rgba(17,17,17,0.08)] bg-[#fafafa] px-4 py-3 text-sm text-slate-700"
                         >
                           <span>{formatDateTime(entry.checkedAt)}</span>
                           <span className="text-[var(--m-error-02)]">삭제</span>
@@ -804,10 +804,10 @@ function MobileDetailView({
           ) : null}
 
           {draft.productType === 'C' ? (
-            <section className={`${mobilePanelClass} p-4`}>
-              <div className="flex items-center justify-between">
+            <section className="border-y border-[rgba(17,17,17,0.1)] bg-white">
+              <div className="flex items-center justify-between px-4 py-4">
                 <div>
-                  <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                  <p className="text-[17px] font-medium tracking-[-0.02em] text-slate-900">
                     사용 체크 관리
                   </p>
                   <p className="mt-1 text-[12px] text-slate-500">
@@ -817,13 +817,13 @@ function MobileDetailView({
                 <button
                   type="button"
                   onClick={() => setShowCalendar((prev) => !prev)}
-                  className="rounded-[10px] border border-[rgba(17,17,17,0.12)] px-3 py-2 text-xs font-medium text-slate-700"
+                  className="text-[13px] font-semibold text-[var(--m-primary-02)]"
                 >
                   월별 기록
                 </button>
               </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="border-t border-[rgba(17,17,17,0.08)] px-4 py-4 space-y-3">
                 {draft.benefitTrackers.map((tracker) => {
                   const currentEntry =
                     tracker.displayMode !== 'info'
@@ -842,12 +842,12 @@ function MobileDetailView({
                     return (
                       <div
                         key={tracker.id}
-                        className={`${mobileInsetClass} p-4`}
+                        className="rounded-[10px] border border-[rgba(17,17,17,0.08)] bg-[#fafafa] p-4"
                       >
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className="text-[15px] font-semibold text-slate-900">
                           {tracker.title}
                         </p>
-                        <p className="mt-3 text-sm leading-6 text-slate-600">
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
                           {tracker.description}
                         </p>
                       </div>
@@ -857,55 +857,59 @@ function MobileDetailView({
                   return (
                     <div
                       key={tracker.id}
-                      className={`${mobileInsetClass} p-4`}
+                      className="rounded-[10px] border border-[rgba(17,17,17,0.08)] bg-[#fafafa] p-4"
                     >
-                      <div className="rounded-[10px] border border-white bg-white px-4 py-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <label className="flex min-w-0 flex-1 items-start gap-3">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(currentEntry)}
-                              onChange={() => {
-                                if (currentEntry) {
-                                  if (!confirm('이번 주기 체크를 해제할까요?')) return;
-                                  onRemoveTrackerEntry(tracker.id, currentEntry.id);
-                                  return;
-                                }
+                      <div className="flex items-start justify-between gap-3">
+                        <label className="flex min-w-0 flex-1 items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(currentEntry)}
+                            onChange={() => {
+                              if (currentEntry) {
+                                if (!confirm('이번 주기 체크를 해제할까요?')) return;
+                                onRemoveTrackerEntry(tracker.id, currentEntry.id);
+                                return;
+                              }
 
-                                onAddTrackerEntry(tracker.id);
-                              }}
-                              className="mt-1 h-5 w-5 accent-[var(--brand-coral)]"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-slate-800">
-                                {tracker.title}
-                              </p>
-                              <p className="mt-1 text-[11px] font-medium text-slate-400">
-                                {buildRuleSummary(
-                                  tracker.cycleUnit,
-                                  tracker.cycleLimit ?? null,
-                                  tracker.annualLimit ?? null
-                                )}
-                              </p>
-                              <p className="mt-1 text-xs leading-5 text-slate-500">
-                                {tracker.description}
-                              </p>
-                            </div>
-                          </label>
-                          <div className="flex shrink-0 flex-col items-end gap-2">
-                            <p className="text-[11px] text-slate-500">
-                              {currentEntry ? formatDateTime(currentEntry.checkedAt) : '미사용'}
+                              onAddTrackerEntry(tracker.id);
+                            }}
+                            className="mt-1 h-5 w-5 accent-[var(--brand-coral)]"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-[15px] font-semibold text-slate-900">
+                              {tracker.title}
                             </p>
-                            {currentEntry ? (
-                              <button
-                                type="button"
-                                onClick={() => onAddTrackerEntry(tracker.id)}
-                                className="rounded-[999px] border border-[rgba(17,17,17,0.12)] px-3 py-1 text-[11px] text-slate-600"
-                              >
-                                + 기록
-                              </button>
-                            ) : null}
+                            <p className="mt-1 text-[11px] font-medium text-slate-400">
+                              {buildRuleSummary(
+                                tracker.cycleUnit,
+                                tracker.cycleLimit ?? null,
+                                tracker.annualLimit ?? null
+                              )}
+                            </p>
+                            <p className="mt-2 text-xs leading-5 text-slate-500">
+                              {tracker.description}
+                            </p>
                           </div>
+                        </label>
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                          <p
+                            className={`text-[11px] ${
+                              currentEntry
+                                ? 'font-medium text-[var(--m-primary-02)]'
+                                : 'text-slate-500'
+                            }`}
+                          >
+                            {currentEntry ? formatDateTime(currentEntry.checkedAt) : '미사용'}
+                          </p>
+                          {currentEntry ? (
+                            <button
+                              type="button"
+                              onClick={() => onAddTrackerEntry(tracker.id)}
+                              className="rounded-[999px] border border-[rgba(17,17,17,0.12)] px-3 py-1 text-[11px] text-slate-600"
+                            >
+                              + 기록
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -914,7 +918,7 @@ function MobileDetailView({
               </div>
 
               {showCalendar ? (
-                <div className="mt-4">
+                <div className="border-t border-[rgba(17,17,17,0.08)] px-4 py-4">
                   <MobileCalendarPanel records={usageCalendarRecords} />
                 </div>
               ) : null}
@@ -922,9 +926,9 @@ function MobileDetailView({
           ) : null}
 
           {draft.productType === 'D' ? (
-            <section className={`${mobilePanelClass} p-4`}>
-              <div>
-                <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+            <section className="border-y border-[rgba(17,17,17,0.1)] bg-white">
+              <div className="px-4 py-4">
+                <p className="text-[17px] font-medium tracking-[-0.02em] text-slate-900">
                   사용 체크 관리
                 </p>
                 <p className="mt-1 text-[12px] text-slate-500">
@@ -932,7 +936,7 @@ function MobileDetailView({
                 </p>
               </div>
 
-              <div className="mt-4">
+              <div className="border-t border-[rgba(17,17,17,0.08)] px-4 py-4">
                 <MobileCalendarPanel
                   records={typeDCalendarRecords}
                   selectedDateKey={selectedCalendarDateKey}
@@ -941,43 +945,45 @@ function MobileDetailView({
                 />
               </div>
 
-              <div className={`mt-4 ${mobileInsetClass} p-4`}>
-                <p className="text-sm font-semibold text-slate-900">
-                  {selectedCalendarDateKey
-                    ? formatDateLabel(selectedCalendarDateKey)
-                    : '날짜 선택'}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {selectedCalendarEntry
-                    ? `마지막 저장 ${formatDateTime(selectedCalendarEntry.savedAt)}`
-                    : '선택한 날짜에 남길 메모를 입력해 저장하세요.'}
-                </p>
-                <textarea
-                  value={calendarNoteDraft}
-                  onChange={(event) => setCalendarNoteDraft(event.target.value)}
-                  rows={3}
-                  className={`${inputClassName} mt-3`}
-                  placeholder="예: 사용자가 생성한 메모 입력"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!selectedCalendarDateKey) {
-                      alert('날짜를 선택해 주세요.');
-                      return;
-                    }
+              <div className="px-4 pb-4">
+                <div className={`${mobileInsetClass} p-4`}>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {selectedCalendarDateKey
+                      ? formatDateLabel(selectedCalendarDateKey)
+                      : '날짜 선택'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {selectedCalendarEntry
+                      ? `마지막 저장 ${formatDateTime(selectedCalendarEntry.savedAt)}`
+                      : '선택한 날짜에 남길 메모를 입력해 저장하세요.'}
+                  </p>
+                  <textarea
+                    value={calendarNoteDraft}
+                    onChange={(event) => setCalendarNoteDraft(event.target.value)}
+                    rows={3}
+                    className={`${inputClassName} mt-3`}
+                    placeholder="예: 사용자가 생성한 메모 입력"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!selectedCalendarDateKey) {
+                        alert('날짜를 선택해 주세요.');
+                        return;
+                      }
 
-                    if (!calendarNoteDraft.trim()) {
-                      alert('메모를 입력한 뒤 저장해 주세요.');
-                      return;
-                    }
+                      if (!calendarNoteDraft.trim()) {
+                        alert('메모를 입력한 뒤 저장해 주세요.');
+                        return;
+                      }
 
-                    onSaveCalendarEntry(selectedCalendarDateKey, calendarNoteDraft);
-                  }}
-                  className="mt-3 w-full rounded-[10px] bg-[var(--m-primary-02)] px-4 py-3 text-sm font-medium text-white"
-                >
-                  저장
-                </button>
+                      onSaveCalendarEntry(selectedCalendarDateKey, calendarNoteDraft);
+                    }}
+                    className="mt-3 w-full rounded-[10px] bg-[var(--m-primary-02)] px-4 py-3 text-sm font-medium text-white"
+                  >
+                    저장
+                  </button>
+                </div>
               </div>
             </section>
           ) : null}
