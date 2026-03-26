@@ -214,16 +214,6 @@ function buildTypeBModuleSummary(draft: UserMembershipConfig) {
   return parts.join(', ') || '조건 확인 필요';
 }
 
-function buildDetailSummaryRows(draft: UserMembershipConfig) {
-  return [
-    { label: '상품', value: draft.selectedTier || '기본 플랜' },
-    { label: '결제주기', value: paymentCycleLabels[draft.billingCycle] },
-    { label: '결제금액', value: formatCurrencyValue(draft.price) },
-    { label: '결제일', value: formatDateValue(draft.paymentDate) },
-    { label: '시작일', value: formatDateValue(draft.startedAt) },
-  ];
-}
-
 function getPreviewImage(
   preset: SeedPreset | null,
   config?: UserMembershipConfig | null
@@ -531,6 +521,7 @@ function MobileDetailView({
   onSaveCalendarEntry,
 }: MobileDetailViewProps) {
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showExtendedDetails, setShowExtendedDetails] = useState(false);
   const [selectedCalendarDateKey, setSelectedCalendarDateKey] = useState('');
   const [calendarNoteDraft, setCalendarNoteDraft] = useState('');
   const { draft, preset } = detail;
@@ -576,12 +567,23 @@ function MobileDetailView({
     draft.productType === 'D' && selectedCalendarDateKey
       ? draft.calendarEntries.find((entry) => entry.dateKey === selectedCalendarDateKey) || null
       : null;
-  const summaryRows = useMemo(() => buildDetailSummaryRows(draft), [draft]);
   const actionLabel = detail.source === 'saved' ? '수정 저장' : '개인 설정 저장';
-  const detailHeaderTitle = detail.source === 'saved' ? '내 구독' : '상품 상세';
+  const detailHeaderTitle = draft.displayName || '상품 상세';
+  const primarySourceUrl = draft.sourceUrls[0] || '';
+  const compactInfoRows = [
+    { label: '결제 금액', value: formatCurrencyValue(draft.price), accent: false },
+    { label: '다음 결제일', value: formatDateValue(draft.paymentDate), accent: false },
+    {
+      label: '결제 수단',
+      value: draft.paymentMethodLabel || paymentMethodLabels[draft.paymentMethodType],
+      accent: false,
+    },
+    { label: '이용 시작일', value: formatDateValue(draft.startedAt), accent: false },
+  ];
 
   useEffect(() => {
     setShowCalendar(false);
+    setShowExtendedDetails(false);
 
     if (draft.productType === 'D') {
       const defaultDateKey = draft.calendarEntries[0]?.dateKey || getTodayDateKey();
@@ -622,9 +624,9 @@ function MobileDetailView({
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-[#fdfdfd] px-4 pb-36 pt-4">
         <div className="space-y-4">
-          <section className={`${mobilePanelClass} p-4`}>
-            <div className="grid grid-cols-[120px,minmax(0,1fr)] gap-4">
-              <div className="flex h-[152px] items-center justify-center overflow-hidden rounded-[6px] border border-[rgba(17,17,17,0.12)] bg-[#f5f5f5] text-xs text-slate-500">
+          <section className="border border-[rgba(17,17,17,0.12)] bg-white p-4 shadow-[0_8px_24px_rgba(17,17,17,0.04)]">
+            <div className="grid grid-cols-[123px,minmax(0,1fr)] gap-5">
+              <div className="flex h-[153px] items-center justify-center overflow-hidden rounded-[4px] border border-[rgba(17,17,17,0.12)] bg-[#f5f5f5] text-xs text-slate-500">
                 {previewImage ? (
                   <img
                     src={previewImage}
@@ -642,69 +644,83 @@ function MobileDetailView({
                 <input
                   value={draft.displayName}
                   onChange={(event) => onUpdateDraft('displayName', event.target.value)}
-                  className="mt-2 w-full border-none bg-transparent p-0 text-[26px] font-semibold leading-[1.1] tracking-[-0.03em] text-slate-900 outline-none"
+                  className="mt-2 w-full border-none bg-transparent p-0 text-[24px] font-semibold leading-[1.14] tracking-[-0.03em] text-slate-900 outline-none"
                 />
-                <p className="mt-3 text-sm leading-6 text-slate-500">{draft.description}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="rounded-[999px] border border-[rgba(17,17,17,0.12)] px-3 py-1 text-[11px] font-medium text-slate-600">
-                    {draft.productType} 타입
-                  </span>
-                  <span className="rounded-[999px] border border-[rgba(17,17,17,0.12)] px-3 py-1 text-[11px] font-medium text-slate-600">
-                    {paymentCycleLabels[draft.billingCycle]}
-                  </span>
+                <p className="mt-2 text-[13px] leading-5 text-slate-600">
+                  {draft.description || '상품 설명을 추가해 주세요.'}
+                </p>
+                <p className="mt-5 text-[13px] text-slate-500">
+                  다음 결제일 <span className="font-semibold text-slate-900">{formatDateValue(draft.paymentDate)}</span>
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="rounded-[4px] bg-[#f2f2f2] px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Plan</p>
+                    <p className="mt-1 text-[13px] font-semibold text-slate-900">
+                      {draft.selectedTier || '기본'}
+                    </p>
+                  </div>
+                  <div className="rounded-[4px] bg-[#f2f2f2] px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Cycle</p>
+                    <p className="mt-1 text-[13px] font-semibold text-slate-900">
+                      {paymentCycleLabels[draft.billingCycle]}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className={`${mobilePanelClass} p-4`}>
-            <div className="flex items-center justify-between">
-              <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
-                상품 정보
-              </p>
-              <p className="text-[12px] font-medium text-[var(--m-primary-02)]">링크 확인</p>
-            </div>
-            <div className="mt-3 space-y-3">
-              {draft.sourceUrls.length ? (
-                draft.sourceUrls.map((url, index) => (
-                  <a
-                    key={`${draft.id}-mobile-url-${index}`}
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`block ${mobileInsetClass} px-4 py-3 text-sm leading-6 text-[var(--m-link)]`}
-                  >
-                    {url}
-                  </a>
-                ))
+          <section className="border-y border-[rgba(17,17,17,0.1)] bg-white">
+            <div className="flex items-center justify-between px-1 py-4">
+              <div className="flex min-w-0 items-center gap-3 px-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(248,55,88,0.1)] text-[var(--m-primary-02)]">
+                  ◎
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[16px] font-medium text-slate-900">공식 안내 URL</p>
+                  <p className="text-[12px] text-slate-500">
+                    {primarySourceUrl ? '상품 공식 페이지로 이동' : '등록된 공식 링크 없음'}
+                  </p>
+                </div>
+              </div>
+              {primarySourceUrl ? (
+                <a
+                  href={primarySourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 text-[13px] font-semibold text-[var(--m-primary-02)]"
+                >
+                  열기
+                </a>
               ) : (
-                <p className="rounded-[12px] border border-dashed border-[rgba(17,17,17,0.12)] bg-[#fafafa] px-4 py-4 text-sm text-slate-500">
-                  연결된 공식 안내 URL이 없습니다.
-                </p>
+                <span className="px-4 text-[13px] text-slate-400">-</span>
               )}
             </div>
-            <textarea
-              value={draft.description}
-              onChange={(event) => onUpdateDraft('description', event.target.value)}
-              rows={4}
-              className={`${inputClassName} mt-4`}
-              placeholder="상품 설명을 입력하세요."
-            />
-          </section>
-
-          <section className={`${mobilePanelClass} overflow-hidden`}>
-            <div className="border-b border-[rgba(17,17,17,0.08)] px-4 py-4">
-              <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
-                결제 및 이용 요약
+            <div className="h-px bg-[rgba(17,17,17,0.08)]" />
+            <div className="px-4 py-4">
+              <p className="text-[17px] font-medium tracking-[-0.02em] text-slate-900">
+                결제 및 이용 정보
               </p>
-            </div>
-            <div className="divide-y divide-[rgba(17,17,17,0.08)] px-4">
-              {summaryRows.map((row) => (
-                <div key={`${draft.id}-${row.label}`} className="flex items-center justify-between py-3">
-                  <span className="text-[15px] text-slate-600">{row.label}</span>
-                  <span className="text-[15px] font-semibold text-slate-900">{row.value}</span>
+              <div className="mt-4 space-y-3">
+                {compactInfoRows.map((row) => (
+                  <div key={`${draft.id}-${row.label}`} className="flex items-center justify-between gap-4">
+                    <span className="text-[15px] text-slate-600">{row.label}</span>
+                    <span
+                      className={`text-right text-[15px] font-semibold ${
+                        row.accent ? 'text-[var(--m-primary-02)]' : 'text-slate-900'
+                      }`}
+                    >
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-[15px] text-slate-600">상품 타입</span>
+                  <span className="text-right text-[15px] font-semibold text-slate-900">
+                    {draft.productType} 타입
+                  </span>
                 </div>
-              ))}
+              </div>
             </div>
           </section>
 
@@ -966,144 +982,165 @@ function MobileDetailView({
             </section>
           ) : null}
 
-          <section className={`${mobilePanelClass} p-4`}>
-            <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
-              사용자 메모
-            </p>
-            <textarea
-              value={draft.userMemo}
-              onChange={(event) => onUpdateDraft('userMemo', event.target.value)}
-              rows={4}
-              className={`${inputClassName} mt-3`}
-              placeholder="예: 프로필 4개 사용 / 가족 공유 / 사용 메모"
-            />
-          </section>
+          {showExtendedDetails ? (
+            <>
+              <section className={`${mobilePanelClass} p-4`}>
+                <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                  상세 편집
+                </p>
+                <textarea
+                  value={draft.description}
+                  onChange={(event) => onUpdateDraft('description', event.target.value)}
+                  rows={4}
+                  className={`${inputClassName} mt-3`}
+                  placeholder="상품 설명을 입력하세요."
+                />
+              </section>
 
-          <section className={`${mobilePanelClass} p-4`}>
-            <ImageUploadArrayField
-              title="첨부 이미지"
-              description="상품별로 참고할 이미지를 Cloudinary에 업로드해 저장합니다."
-              images={draft.photos}
-              onAdd={onAddPhotoField}
-              onChange={onUpdatePhoto}
-              onRemove={onRemovePhotoField}
-              customNamePrefix={`mobile-detail-${draft.id}`}
-              uploadFolderPath={`user-attachments/mobile/${draft.productType.toLowerCase()}`}
-              addButtonLabel="+ 추가"
-              gridClassName="grid-cols-2"
-              slotEmptyLabel="첨부 이미지"
-            />
-          </section>
+              <section className={`${mobilePanelClass} p-4`}>
+                <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                  사용자 메모
+                </p>
+                <textarea
+                  value={draft.userMemo}
+                  onChange={(event) => onUpdateDraft('userMemo', event.target.value)}
+                  rows={4}
+                  className={`${inputClassName} mt-3`}
+                  placeholder="예: 프로필 4개 사용 / 가족 공유 / 사용 메모"
+                />
+              </section>
 
-          <section className={`${mobilePanelClass} p-4`}>
-            <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
-              결제정보
-            </p>
-            <div className="mt-4 grid gap-3">
-              <div className={`${mobileInsetClass} px-4 py-4`}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  Payment
+              <section className={`${mobilePanelClass} p-4`}>
+                <ImageUploadArrayField
+                  title="첨부 이미지"
+                  description="상품별로 참고할 이미지를 Cloudinary에 업로드해 저장합니다."
+                  images={draft.photos}
+                  onAdd={onAddPhotoField}
+                  onChange={onUpdatePhoto}
+                  onRemove={onRemovePhotoField}
+                  customNamePrefix={`mobile-detail-${draft.id}`}
+                  uploadFolderPath={`user-attachments/mobile/${draft.productType.toLowerCase()}`}
+                  addButtonLabel="+ 추가"
+                  gridClassName="grid-cols-2"
+                  slotEmptyLabel="첨부 이미지"
+                />
+              </section>
+
+              <section className={`${mobilePanelClass} p-4`}>
+                <p className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900">
+                  결제정보
                 </p>
-                <p className="mt-2 text-[16px] font-semibold text-slate-900">
-                  {paymentMethodLabels[draft.paymentMethodType]}
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {draft.paymentMethodLabel || '카드명 또는 계좌명 미입력'}
-                </p>
-              </div>
-              <input
-                value={draft.selectedTier}
-                onChange={(event) => onUpdateDraft('selectedTier', event.target.value)}
-                className={inputClassName}
-                placeholder="상품 티어 또는 플랜명"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={draft.billingCycle}
-                  onChange={(event) =>
-                    onUpdateDraft('billingCycle', event.target.value as PaymentCycle)
-                  }
-                  className={inputClassName}
-                >
-                  {(Object.keys(paymentCycleLabels) as PaymentCycle[]).map((cycle) => (
-                    <option key={cycle} value={cycle}>
-                      {paymentCycleLabels[cycle]}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min="0"
-                  value={draft.price ?? ''}
-                  onChange={(event) =>
-                    onUpdateDraft(
-                      'price',
-                      event.target.value === '' ? null : Number(event.target.value)
-                    )
-                  }
-                  className={inputClassName}
-                  placeholder="가격"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  value={draft.paymentDate}
-                  onChange={(event) => onUpdateDraft('paymentDate', event.target.value)}
-                  className={inputClassName}
-                />
-                <input
-                  type="date"
-                  value={draft.startedAt}
-                  onChange={(event) => onUpdateDraft('startedAt', event.target.value)}
-                  className={inputClassName}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={draft.paymentMethodType}
-                  onChange={(event) =>
-                    onUpdateDraft(
-                      'paymentMethodType',
-                      event.target.value as PaymentMethodType
-                    )
-                  }
-                  className={inputClassName}
-                >
-                  {(Object.keys(paymentMethodLabels) as PaymentMethodType[]).map((method) => (
-                    <option key={method} value={method}>
-                      {paymentMethodLabels[method]}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  value={draft.paymentMethodLabel}
-                  onChange={(event) =>
-                    onUpdateDraft('paymentMethodLabel', event.target.value)
-                  }
-                  className={inputClassName}
-                  placeholder="카드명 또는 계좌명"
-                />
-              </div>
-            </div>
-          </section>
+                <div className="mt-4 grid gap-3">
+                  <div className={`${mobileInsetClass} px-4 py-4`}>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Payment
+                    </p>
+                    <p className="mt-2 text-[16px] font-semibold text-slate-900">
+                      {paymentMethodLabels[draft.paymentMethodType]}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {draft.paymentMethodLabel || '카드명 또는 계좌명 미입력'}
+                    </p>
+                  </div>
+                  <input
+                    value={draft.selectedTier}
+                    onChange={(event) => onUpdateDraft('selectedTier', event.target.value)}
+                    className={inputClassName}
+                    placeholder="상품 티어 또는 플랜명"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={draft.billingCycle}
+                      onChange={(event) =>
+                        onUpdateDraft('billingCycle', event.target.value as PaymentCycle)
+                      }
+                      className={inputClassName}
+                    >
+                      {(Object.keys(paymentCycleLabels) as PaymentCycle[]).map((cycle) => (
+                        <option key={cycle} value={cycle}>
+                          {paymentCycleLabels[cycle]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft.price ?? ''}
+                      onChange={(event) =>
+                        onUpdateDraft(
+                          'price',
+                          event.target.value === '' ? null : Number(event.target.value)
+                        )
+                      }
+                      className={inputClassName}
+                      placeholder="가격"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="date"
+                      value={draft.paymentDate}
+                      onChange={(event) => onUpdateDraft('paymentDate', event.target.value)}
+                      className={inputClassName}
+                    />
+                    <input
+                      type="date"
+                      value={draft.startedAt}
+                      onChange={(event) => onUpdateDraft('startedAt', event.target.value)}
+                      className={inputClassName}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={draft.paymentMethodType}
+                      onChange={(event) =>
+                        onUpdateDraft(
+                          'paymentMethodType',
+                          event.target.value as PaymentMethodType
+                        )
+                      }
+                      className={inputClassName}
+                    >
+                      {(Object.keys(paymentMethodLabels) as PaymentMethodType[]).map((method) => (
+                        <option key={method} value={method}>
+                          {paymentMethodLabels[method]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={draft.paymentMethodLabel}
+                      onChange={(event) =>
+                        onUpdateDraft('paymentMethodLabel', event.target.value)
+                      }
+                      className={inputClassName}
+                      placeholder="카드명 또는 계좌명"
+                    />
+                  </div>
+                </div>
+              </section>
+            </>
+          ) : null}
         </div>
       </div>
 
       <div className="sticky bottom-0 z-20 border-t border-[rgba(17,17,17,0.08)] bg-white px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1 pl-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Summary
+          <button
+            type="button"
+            onClick={() => setShowExtendedDetails((prev) => !prev)}
+            className="min-w-0 flex-1 pl-1 text-left"
+          >
+            <p className="text-[12px] font-semibold text-[var(--m-primary-02)]">
+              {showExtendedDetails ? '상세 닫기' : 'View Details'}
             </p>
             <p className="mt-1 truncate text-[18px] font-semibold tracking-[-0.02em] text-slate-900">
               {formatCurrencyValue(draft.price)}
             </p>
-          </div>
+          </button>
           <button
             type="button"
             onClick={onSave}
-            className="rounded-[10px] bg-[var(--m-primary-02)] px-5 py-3 text-sm font-medium text-white"
+            className="min-w-[168px] rounded-[6px] bg-[var(--m-primary-02)] px-5 py-3 text-sm font-medium text-white"
           >
             {actionLabel}
           </button>
