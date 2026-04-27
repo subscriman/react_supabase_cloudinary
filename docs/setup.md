@@ -1,148 +1,108 @@
-# 구독 관리 앱 설정 가이드
+# ArtTomato 설정 가이드
 
-## 1. 프로젝트 구조
-```
-subscription-manager/
-├── mobile/          # React Native 앱
-├── web/            # 관리자 웹 페이지 (Next.js)
-├── database/       # Supabase 스키마 및 함수
-├── shared/         # 공통 타입 정의
-└── docs/           # 문서
-```
+## 1. 전제 조건
 
-## 2. Supabase 설정
+- Node.js 20 LTS (`.nvmrc` 기준)
+- npm 10+
+- Supabase CLI
+- Vercel 계정(배포 시)
 
-### 2.1 프로젝트 생성
-1. [Supabase](https://supabase.com)에서 새 프로젝트 생성
-2. 데이터베이스 비밀번호 설정
+## 2. 환경 변수 준비
 
-### 2.2 데이터베이스 스키마 적용
-1. Supabase 대시보드 → SQL Editor
-2. `database/schema.sql` 파일 내용 실행
-3. `database/functions.sql` 파일 내용 실행
-
-### 2.3 인증 설정
-1. Authentication → Settings
-2. 소셜 로그인 제공자 설정 (Google, Kakao 등)
-
-### 2.4 스토리지 설정 (이미지 호스팅용)
-1. Storage → Create bucket: `preset-images`
-2. 공개 접근 정책 설정
-
-## 3. 환경 변수 설정
-
-### 3.1 공통 환경 변수
-`.env` 파일 생성 (`cp .env.example .env`):
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-### 3.2 모바일 앱 환경 변수
-`mobile/.env` 파일 생성 (`cp mobile/.env.example mobile/.env`):
-```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-### 3.3 웹 환경 변수
-`web/.env.local` 파일 생성 (`cp web/.env.local.example web/.env.local`)
-
-### 3.4 시크릿 관리 규칙
-1. 실제 키/시크릿은 `.env`, `mobile/.env`, `web/.env.local`에만 저장
-2. Git에는 예시 파일(`*.example`)만 커밋
-3. CI/배포 환경(Netlify 등)은 플랫폼 시크릿 변수로 등록
-4. Android Maps 키는 `~/.gradle/gradle.properties` 또는 CI 변수(`GOOGLE_MAPS_API_KEY`)로만 주입
-
-## 4. 개발 환경 설정
-
-### 4.1 의존성 설치
 ```bash
-# 루트에서 전체 설치
+cp .env.example .env
+cp web/.env.local.example web/.env.local
+cp mobile/.env.example mobile/.env
+```
+
+필수 값:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SITE_URL`
+- `LLM_API_KEY`
+- `LLM_BASE_URL`
+- `LLM_MODEL_NAME`
+
+수집 파이프라인 실저장 시 추가:
+
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+웹 선택 값(배포 전에는 localhost 권장):
+
+- `NEXT_PUBLIC_SITE_URL` (예: `http://localhost:3000`)
+
+검증:
+
+```bash
+npm run env:check
+npm run supabase:key-check
+npm run supabase:rls-check
+npm run qa:smoke-web
+```
+
+## 3. 의존성 설치
+
+```bash
 npm run setup
-
-# 또는 개별 설치
-cd mobile && npm install
-cd web && npm install
 ```
 
-### 4.2 React Native 개발 환경
-1. Node.js LTS 20 사용 (`nvm use` 또는 `nvm install 20 && nvm use`)
-2. React Native CLI 설치: `npm install -g react-native-cli`
-3. Android Studio (Android) 또는 Xcode (iOS) 설치
-4. 에뮬레이터/시뮬레이터 설정
+## 4. Supabase 연결 및 스키마 반영
 
-### 4.3 개발 서버 실행
 ```bash
-# 모바일 앱
-npm run dev:mobile
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase db push
+```
 
-# 웹 관리자
+ArtTomato 기준 마이그레이션 파일:
+
+- `supabase/migrations/20260402090000_arttomato_core_schema.sql`
+- `supabase/migrations/20260402090500_arttomato_seed.sql`
+- `supabase/migrations/20260402173000_arttomato_ingestion_raw_and_source_metadata.sql`
+- `supabase/migrations/20260402173500_arttomato_source_sites_metadata_seed.sql`
+
+## 5. 웹 실행
+
+```bash
 npm run dev:web
 ```
 
-## 5. 배포
+기본 URL: `http://localhost:3000`
 
-### 5.1 웹 관리자 배포 (Netlify)
-1. GitHub 저장소 연결
-2. Build command: `cd web && npm run build`
-3. Publish directory: `web/out`
-4. 환경 변수 설정
+## 6. 수집 파이프라인 점검
 
-### 5.2 모바일 앱 빌드
+LLM 연결 테스트:
+
 ```bash
-# Android
-cd mobile && npm run build:android
-
-# iOS
-cd mobile && npm run build:ios
+npm run llm:test
 ```
 
-## 6. 초기 데이터 설정
+수집 드라이런:
 
-### 6.1 T우주 프리셋 등록
-관리자 웹에서 다음 정보로 프리셋 등록:
-- 상품명: T우주
-- 제공업체: SKT
-- 설명: 배달의민족 3천원 쿠폰 3장 제공
-- 서브 상품:
-  - 배달의민족 3천원 쿠폰 #1 (쿠폰, 30일)
-  - 배달의민족 3천원 쿠폰 #2 (쿠폰, 30일)
-  - 배달의민족 3천원 쿠폰 #3 (쿠폰, 30일)
+```bash
+npm run ingest:run -- --site=mmca --dry-run
+```
 
-### 6.2 배너 설정
-관리자 웹에서 메이저 사업자 배너 등록
+## 7. 관리자 권한 설정(수동)
 
-## 7. 테스트 시나리오
+자동 스크립트(권장):
 
-### 7.1 기본 기능 테스트
-1. T우주 프리셋 선택
-2. 구독 정보 입력 (시작일, 결제일, 금액)
-3. 쿠폰 수령일 설정
-4. 등록 완료 및 알림 설정 확인
+```bash
+npm run supabase:grant-admin -- --email=you@example.com
+```
 
-### 7.2 프리셋 공유 테스트
-1. 구독 상품을 프리셋으로 내보내기
-2. XML 파일 생성 및 공유
-3. 다른 기기에서 프리셋 가져오기
-4. 프리셋 적용 및 커스터마이징
+또는 아래 SQL로 직접 승격:
 
-## 8. 주요 기능 구현 상태
+1. 로그인해서 `profiles` 행 생성
+2. Supabase SQL Editor에서 관리자 승격:
 
-✅ 완료:
-- 기본 데이터베이스 스키마
-- Supabase 연동
-- 기본 서비스 클래스들
-- T우주 프리셋 화면
-- 관리자 웹 기본 구조
+```sql
+update public.profiles
+set role = 'admin'
+where id = 'YOUR_AUTH_USER_UUID';
+```
 
-🚧 진행 중:
-- 알림 시스템 완성
-- 프리셋 공유 기능
-- 사용자 인증
-- 전체 화면 구성
+## 8. 배포
 
-📋 예정:
-- 앱 아이콘 및 스플래시 화면
-- 푸시 알림 서버
-- 앱스토어 배포 준비
+배포/운영 절차는 [`배포_운영_런북.md`](/Users/shin/workspace/ArtTomato/docs/배포_운영_런북.md) 참고.
