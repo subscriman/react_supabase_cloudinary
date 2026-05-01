@@ -188,7 +188,10 @@ function extractImageUrlFromTag(tagHtml, baseUrl) {
 }
 
 function normalizeExtractedText(htmlFragment) {
-  const withBreaks = String(htmlFragment || '')
+  // <p><br></p> 패턴(단락 구분자)을 먼저 \n\n으로 치환
+  const withParagraphBreaks = String(htmlFragment || '')
+    .replace(/<p[^>]*>\s*(?:<span[^>]*>\s*)?<br\s*\/?>\s*(?:<\/span>)?\s*<\/p>/gi, '\n\n');
+  const withBreaks = withParagraphBreaks
     .replace(/<\s*br\s*\/?>/gi, '\n')
     .replace(/<\/\s*p\s*>/gi, '\n')
     .replace(/<\s*li[^>]*>/gi, '\n• ')
@@ -200,13 +203,20 @@ function normalizeExtractedText(htmlFragment) {
   const decoded = decodeHtmlEntities(withBreaks)
     .replace(/\r/g, '\n')
     .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n');
-  const lines = decoded
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .filter((line) => !/^<\s*\/?[a-z][a-z0-9:-]*\s*$/i.test(line));
-  return lines.join('\n').trim();
+    .replace(/\n{4,}/g, '\n\n\n');
+
+  const paragraphs = decoded.split(/\n\n+/);
+  const cleanedParagraphs = paragraphs
+    .map((para) =>
+      para
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .filter((line) => !/^<\s*\/?[a-z][a-z0-9:-]*\s*$/i.test(line))
+        .join('\n'),
+    )
+    .filter((para) => para.length > 0);
+  return cleanedParagraphs.join('\n\n').trim();
 }
 
 function extractOrderedContentBlocks(htmlFragment, baseUrl) {

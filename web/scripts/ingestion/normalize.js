@@ -38,6 +38,19 @@ function sanitizeNullableString(value, maxLength = 5000) {
   return cleaned.slice(0, maxLength);
 }
 
+// Preserves newlines — use for markdown/multiline fields like description.
+function sanitizeMultilineString(value, maxLength = 60000) {
+  if (value === null || value === undefined) return null;
+  const cleaned = String(value)
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (!cleaned) return null;
+  return cleaned.slice(0, maxLength);
+}
+
 function sanitizeUrl(value) {
   const normalized = sanitizeNullableString(value, 1000);
   if (!normalized) return null;
@@ -63,7 +76,7 @@ function fallbackNormalize(rawItem) {
     operatingHours: null,
     admissionFee: null,
     summary: sanitizeNullableString(rawItem?.summary, 1000),
-    description: sanitizeNullableString(rawItem?.summary, 60000),
+    description: sanitizeMultilineString(rawItem?.summary, 60000),
     officialUrl: sanitizeUrl(rawItem?.detailUrl || rawItem?.listUrl),
     bookingUrl: null,
     posterImageUrl: sanitizeUrl(rawItem?.imageUrl),
@@ -84,7 +97,7 @@ function validateAndCoerceNormalized(raw) {
     operatingHours: sanitizeNullableString(raw?.operatingHours, 300),
     admissionFee: sanitizeNullableString(raw?.admissionFee, 300),
     summary: sanitizeNullableString(raw?.summary, 1000),
-    description: sanitizeNullableString(raw?.description, 60000),
+    description: sanitizeMultilineString(raw?.description, 60000),
     officialUrl: sanitizeUrl(raw?.officialUrl),
     bookingUrl: sanitizeUrl(raw?.bookingUrl),
     posterImageUrl: sanitizeUrl(raw?.posterImageUrl),
@@ -136,6 +149,7 @@ function buildDedupeKey(normalized) {
 module.exports = {
   buildDedupeKey,
   fallbackNormalize,
+  sanitizeMultilineString,
   slugify,
   validateAndCoerceNormalized,
 };

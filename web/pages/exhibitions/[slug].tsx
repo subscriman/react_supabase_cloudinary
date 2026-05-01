@@ -475,9 +475,15 @@ export default function ExhibitionDetailPage({
                           {block.label || '관련자료 다운로드'}
                         </a>
                       ) : (
-                        <p key={`description-text-${index}`} className="whitespace-pre-line">
-                          {block.value}
-                        </p>
+                        <div key={`description-text-${index}`} className="space-y-4">
+                          {String(block.value || '')
+                            .split(/\n\n+/)
+                            .map((para, paraIndex) => (
+                              <p key={paraIndex} className="whitespace-pre-line">
+                                {para.trim()}
+                              </p>
+                            ))}
+                        </div>
                       ),
                     )
                   ) : (
