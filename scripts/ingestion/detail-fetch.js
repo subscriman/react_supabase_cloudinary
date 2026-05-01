@@ -204,7 +204,8 @@ function normalizeExtractedText(htmlFragment) {
   const lines = decoded
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+    .filter((line) => line.length > 0)
+    .filter((line) => !/^<\s*\/?[a-z][a-z0-9:-]*\s*$/i.test(line));
   return lines.join('\n').trim();
 }
 
@@ -446,29 +447,64 @@ function parseJavascriptFunctionArgs(value) {
   return args;
 }
 
+function normalizeMmcaDownloadUrl(value, baseUrl) {
+  const raw = decodeHtmlEntities(value || '')
+    .replace(/\\\//g, '/')
+    .trim();
+  if (!raw) return null;
+  return toAbsoluteUrl(raw, baseUrl);
+}
+
+function getHtmlAttribute(attrs, name) {
+  const source = String(attrs || '');
+  const escaped = String(name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!escaped) return '';
+  const doubleQuoted = new RegExp(`\\s${escaped}\\s*=\\s*"([^"]*)"`, 'i').exec(source);
+  if (doubleQuoted?.[1]) return decodeHtmlEntities(doubleQuoted[1]);
+  const singleQuoted = new RegExp(`\\s${escaped}\\s*=\\s*'([^']*)'`, 'i').exec(source);
+  if (singleQuoted?.[1]) return decodeHtmlEntities(singleQuoted[1]);
+  const unquoted = new RegExp(`\\s${escaped}\\s*=\\s*([^\\s>]+)`, 'i').exec(source);
+  return decodeHtmlEntities(unquoted?.[1] || '');
+}
+
 function extractMmcaRelatedDownloads(html, baseUrl) {
   const downloads = [];
   const seen = new Set();
-  const pattern = /<a\b([^>]*\bclass=["'][^"']*\bbtnDownList\b[^"']*["'][^>]*)>([\s\S]*?)<\/a>/gi;
-  let match;
-  while ((match = pattern.exec(html)) !== null) {
-    const attrs = match[1] || '';
-    const hrefRaw = attrs.match(/\shref\s*=\s*["']([^"']+)["']/i)?.[1] || '';
-    const args = parseJavascriptFunctionArgs(hrefRaw);
+
+  function addDownload(attrs, labelSource) {
+    const attrText = String(attrs || '');
+    const hrefRaw = getHtmlAttribute(attrText, 'href');
+    const onclickRaw = getHtmlAttribute(attrText, 'onclick');
+    const callRaw = hrefRaw.includes('fn_ViewDownChoosePop') ? hrefRaw : onclickRaw;
+    const args = parseJavascriptFunctionArgs(callRaw);
     const firstUrlArg = args.find((arg) => /^https?:\/\//i.test(arg));
-    const url = toAbsoluteUrl(firstUrlArg || hrefRaw, baseUrl);
-    if (!url || !/^https?:\/\//i.test(url)) continue;
-    if (seen.has(url)) continue;
+    const url = normalizeMmcaDownloadUrl(firstUrlArg || hrefRaw, baseUrl);
+    if (!url || !/^https?:\/\//i.test(url)) return;
+    if (seen.has(url)) return;
     seen.add(url);
 
     const label =
-      normalizeExtractedText(match[2]).replace(/^다운로드\s*/i, '').trim() ||
-      attrs.match(/\btitle\s*=\s*["']([^"']+)["']/i)?.[1] ||
+      normalizeExtractedText(labelSource).replace(/^다운로드\s*/i, '').trim() ||
+      getHtmlAttribute(attrText, 'title') ||
       '관련자료 다운로드';
     downloads.push({
       label: decodeHtmlEntities(label).slice(0, 120),
       url,
     });
+  }
+
+  const anchorPattern = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+  let anchorMatch;
+  while ((anchorMatch = anchorPattern.exec(html)) !== null) {
+    const attrs = anchorMatch[1] || '';
+    if (!/\bbtnDownList\b/i.test(attrs) && !/fn_ViewDownChoosePop/i.test(attrs)) continue;
+    addDownload(attrs, anchorMatch[2] || '');
+  }
+
+  const functionPattern = /fn_ViewDownChoosePop\s*\(([\s\S]*?)\)/gi;
+  let functionMatch;
+  while ((functionMatch = functionPattern.exec(html)) !== null) {
+    addDownload(` href="javascript:fn_ViewDownChoosePop(${functionMatch[1]})"`, '관련자료 다운로드');
   }
   return downloads.slice(0, 12);
 }
@@ -508,6 +544,70 @@ function sliceMmcaExhibitionInfoHtml(html) {
   return end > 0 ? scoped.slice(0, end) : scoped;
 }
 
+function extractMmcaTextAreaHtml(html) {
+  const source = String(html || '');
+  const contTextStart = findFirstTagIndexByClass(source, 'contTextWrap');
+  if (contTextStart < 0) return '';
+  const scoped = source.slice(contTextStart);
+  const textAreaStart = findFirstTagIndexByClass(scoped, 'txtArea');
+  if (textAreaStart < 0) return '';
+  const from = textAreaStart;
+  const afterStart = scoped.slice(from);
+  const endMatch = /<button\b[^>]*class=["'][^"']*\bbtnMore\b/i.exec(afterStart);
+  const to = endMatch && typeof endMatch.index === 'number' ? from + endMatch.index : from + 60000;
+  return scoped.slice(from, to);
+}
+
+function extractMmcaSlideBlocks(html, baseUrl) {
+  const blocks = [];
+  const seenImages = new Set();
+  const pattern =
+    /<div[^>]+class=["'][^"']*\bswiper-slide\b[^"']*["'][^>]*>[\s\S]*?(<img\b[^>]*>)[\s\S]*?<div[^>]+class=["'][^"']*\binfo\b[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>/gi;
+  let match;
+  while ((match = pattern.exec(html)) !== null) {
+    const imageUrl = extractImageUrlFromTag(match[1], baseUrl);
+    if (imageUrl) {
+      const key = (() => {
+        try {
+          const parsed = new URL(imageUrl);
+          return `${parsed.hostname.toLowerCase()}${parsed.pathname}${parsed.search}`;
+        } catch {
+          return imageUrl;
+        }
+      })();
+      if (!seenImages.has(key)) {
+        seenImages.add(key);
+        blocks.push({ type: 'image', value: imageUrl });
+      }
+    }
+
+    const caption = normalizeExtractedText(match[2]);
+    if (caption) {
+      blocks.push({ type: 'text', value: caption });
+    }
+  }
+  return blocks;
+}
+
+function extractMmcaStructuredContentBlocks(html, baseUrl) {
+  const cleaned = stripElementsByClass(stripNonContentHtml(html), ['imgBg', 'audioGuide', 'audioGuideBox']);
+  const slideBlocks = extractMmcaSlideBlocks(cleaned, baseUrl);
+  const introText = normalizeExtractedText(extractMmcaTextAreaHtml(cleaned));
+
+  if (slideBlocks.length === 0 && !introText) return [];
+
+  const blocks = [];
+  if (slideBlocks.length > 0) {
+    blocks.push({ type: 'text', value: '작품 이미지 설명' });
+    blocks.push(...slideBlocks);
+  }
+  if (introText) {
+    blocks.push({ type: 'text', value: '전시 설명' });
+    blocks.push({ type: 'text', value: introText });
+  }
+  return blocks;
+}
+
 function extractMmcaDetailContext(html, baseUrl) {
   const downloads = extractMmcaRelatedDownloads(html, baseUrl);
   const candidates = [
@@ -530,8 +630,14 @@ function extractMmcaDetailContext(html, baseUrl) {
   }
 
   const infoSection = sliceMmcaExhibitionInfoHtml(rawSection) || rawSection;
-  const cleaned = stripElementsByClass(stripNonContentHtml(infoSection), ['imgBg', 'audioGuide', 'audioGuideBox']);
-  const orderedBlocks = extractOrderedContentBlocks(cleaned, baseUrl).filter((block) => {
+  const structuredBlocks = extractMmcaStructuredContentBlocks(infoSection, baseUrl);
+  const orderedBlocks = (structuredBlocks.length > 0
+    ? structuredBlocks
+    : extractOrderedContentBlocks(
+        stripElementsByClass(stripNonContentHtml(infoSection), ['imgBg', 'audioGuide', 'audioGuideBox']),
+        baseUrl,
+      )
+  ).filter((block) => {
     const value = String(block?.value || '');
     if (block.type === 'text' && /오디오\s*가이드/i.test(value) && value.length < 120) return false;
     return true;

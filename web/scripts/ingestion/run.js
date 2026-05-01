@@ -351,15 +351,19 @@ async function runSiteIngestion({ supabase, site, options, env }) {
   const allowDryRunSampleFallback = options.dryRun && parseBooleanEnv(env.INGESTION_DRYRUN_SAMPLE_FALLBACK, false);
   const allowDaeguEdgeFetch =
     site.config.key === 'daegu-art' && parseBooleanEnv(env.INGESTION_DAEGU_USE_EDGE_FETCH, false);
-  try {
-    const listResponse = await fetchText(site.listUrl, {
-      insecureTls: Boolean(site?.config?.allowInsecureTls),
-    });
-    if (!listResponse.ok) {
-      throw new Error(`목록 요청 실패 (${listResponse.status} ${listResponse.statusText})`);
-    }
-    listHtml = listResponse.text;
-  } catch (error) {
+  const skipListHtmlFetch = site.config.key === 'mmca';
+  if (skipListHtmlFetch) {
+    logStep(scope, '목록 HTML fetch 생략: MMCA Ajax 목록 API 우선 사용');
+  } else {
+    try {
+      const listResponse = await fetchText(site.listUrl, {
+        insecureTls: Boolean(site?.config?.allowInsecureTls),
+      });
+      if (!listResponse.ok) {
+        throw new Error(`목록 요청 실패 (${listResponse.status} ${listResponse.statusText})`);
+      }
+      listHtml = listResponse.text;
+    } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     listFetchError = error instanceof Error ? error : new Error(message);
     if (allowDaeguEdgeFetch) {
@@ -433,6 +437,7 @@ async function runSiteIngestion({ supabase, site, options, env }) {
     } else {
       logStep(scope, `목록 fetch 실패, 어댑터 대체 경로 시도: ${message}`);
       listHtml = '';
+    }
     }
   }
 

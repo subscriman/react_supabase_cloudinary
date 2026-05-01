@@ -27,8 +27,33 @@ export default function MobilePage({ seedData }: MobilePageProps) {
 }
 
 export const getStaticProps: GetStaticProps<MobilePageProps> = async () => {
-  const seedPath = path.join(process.cwd(), '..', 'docs', 'preset_seed.json');
-  const raw = await fs.readFile(seedPath, 'utf8');
+  const seedCandidates = [
+    path.join(process.cwd(), 'docs', 'preset_seed.json'),
+    path.join(process.cwd(), '..', 'docs', 'preset_seed.json'),
+  ];
+  let raw: string | null = null;
+  for (const seedPath of seedCandidates) {
+    try {
+      raw = await fs.readFile(seedPath, 'utf8');
+      break;
+    } catch {
+      // Try the next project layout.
+    }
+  }
+  if (!raw) {
+    raw = JSON.stringify({
+      version: 'fallback',
+      generatedFrom: {
+        documentPath: '',
+        sourceCheckedAt: '',
+      },
+      limitations: [],
+      sources: {},
+      catalogs: {},
+      recommendedInitialPresetKeys: [],
+      presets: [],
+    });
+  }
   const seedData = JSON.parse(raw) as SeedData;
 
   return {
